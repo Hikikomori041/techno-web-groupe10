@@ -13,20 +13,14 @@ const categories = [
     name: "Smartphones",
     icon: Smartphone,
     description: "Latest mobile devices",
-    href: "/category/smartphones",
+    href: "category/smartphones",
   },
   {
     name: "Accessories",
     icon: Headphones,
     description: "Tech accessories & more",
-    href: "/category/accessories",
-  },
-  {
-    name: "Monitors",
-    icon: Monitor,
-    description: "Premium displays",
-    href: "/category/monitors",
-  },
+    href: "category/accessories",
+  }
 ]
 
 export function CategoryGrid() {
@@ -38,7 +32,7 @@ export function CategoryGrid() {
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Browse our wide selection of tech products</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-6">
           {categories.map((category) => {
             const Icon = category.icon
             return (
