@@ -1,3 +1,5 @@
+import { Role } from '../enums/role.enum';
+
 export interface User {
   id: string;
   email: string;
@@ -6,6 +8,7 @@ export interface User {
   lastName?: string;
   picture?: string;
   provider: 'local' | 'google';
+  roles: Role[];
   createdAt: Date;
 }
 
