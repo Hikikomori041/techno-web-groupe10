@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductsModule } from './products/products.module';
+import { ProductStatsModule } from './product-stats/product-stats.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -25,6 +26,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
     }),
     ProductsModule,
+    ProductStatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,10 +1,16 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
-import { ProductsService } from './products.service';
 import { Product } from './product.schema';
+import { ProductsService } from './products.service';
+import { ProductStatsService } from '../product-stats/product-stats.service';
+import { Types } from 'mongoose';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly service: ProductsService) {}
+  constructor(
+    private readonly service: ProductsService,
+    private readonly productStatsService: ProductStatsService,
+  ) {}
+
 
   @Get()
   async findAll(): Promise<Product[]> {
@@ -17,9 +23,19 @@ export class ProductsController {
   }
 
   @Post()
-  async create(@Body() product: Partial<Product>): Promise<Product> {
-    return this.service.create(product);
+  async create(@Body() product: Partial<Product>) {
+    const newProduct = await this.service.create(product);
+
+    // Crée la fiche de stats associée (même ID)
+  await this.productStatsService.create({
+      _id: newProduct._id as Types.ObjectId, // ✅ cast explicite
+      quantite_en_stock: 0,
+      nombre_de_vente: 0,
+    });
+
+    return newProduct;
   }
+
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() product: Partial<Product>): Promise<Product | null> {

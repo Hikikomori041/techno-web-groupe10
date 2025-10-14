@@ -1,0 +1,17 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+
+@Schema({ _id: false })
+export class ProductStats extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
+  declare _id: Types.ObjectId; // ✅ "declare" = je sais ce que je fais
+
+  @Prop({ required: true, default: 0 })
+  quantite_en_stock: number;
+
+  @Prop({ required: true, default: 0 })
+  nombre_de_vente: number;
+}
+
+export const ProductStatsSchema = SchemaFactory.createForClass(ProductStats);
+
