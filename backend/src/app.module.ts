@@ -4,13 +4,30 @@ import { ProductsModule } from './products/products.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/achetez'), // adapte ton URL Mongo
+    ConfigModule.forRoot({
+      isGlobal: true, // dispo partout sans re-import
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const user = configService.get<string>('DB_USER');
+        const pass = configService.get<string>('DB_PASSWORD');
+        const name = configService.get<string>('DB_NAME');
+        const url = configService.get<string>('DB_URL');
+        return {
+          uri: `mongodb+srv://${user}:${pass}@${name}.${url}/?retryWrites=true&w=majority&appName=${name}`,
+        };
+      },
+      inject: [ConfigService],
+    }),
     ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
+
 export class AppModule {}
