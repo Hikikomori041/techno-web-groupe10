@@ -21,10 +21,10 @@ export class ProductStatsController {
   }
 
   // POST /product-stats
-  @Post()
-  create(@Body() data: Partial<ProductStats>) {
-    return this.service.create(data);
-  }
+  // @Post()
+  // create(@Body() data: Partial<ProductStats>) {
+  //   return this.service.create(data);
+  // }
 
   // POST /product-stats/:id_produit → mise à jour quantité
   @Post(':id_produit')
@@ -46,17 +46,17 @@ export class ProductStatsController {
   @Post(':id_produit/restock')
   restock(
     @Param('id_produit') id: string,
-    @Body() body: { ajout: number }
+    @Body() body: { quantity: number }
   ) {
-    const ajout = body?.ajout ?? 0;
-    return this.service.restock(id, ajout);
+    const quantity = body?.quantity ?? 0;
+    return this.service.restock(id, quantity);
   }
 
 
 
   // DELETE /product-stats/:id_produit
-  @Delete(':id_produit')
-  remove(@Param('id_produit') id: string) {
-    return this.service.removeByProduct(id);
-  }
+  // @Delete(':id_produit')
+  // remove(@Param('id_produit') id: string) {
+  //   return this.service.removeByProduct(id);
+  // }
 }

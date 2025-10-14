@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, NotFoundException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ProductStats } from './product-stats.schema';
@@ -98,10 +98,10 @@ export class ProductStatsService {
     return stat.save();
   }
 
-  async restock(id: string, ajout = 0) {
+  async restock(id: string, quantity = 0) {
     const objectId = new Types.ObjectId(id);
 
-    if (ajout <= 0) {
+    if (quantity <= 0) {
       throw new BadRequestException('La quantité ajoutée doit être supérieure à 0');
     }
 
@@ -110,7 +110,7 @@ export class ProductStatsService {
       throw new BadRequestException(`Aucune statistique trouvée pour le produit ${id}`);
     }
 
-    stat.quantite_en_stock += ajout;
+    stat.quantite_en_stock += quantity;
     return stat.save();
   }
 
@@ -118,6 +118,14 @@ export class ProductStatsService {
   // Supprimer les stats d’un produit
   async removeByProduct(id: string) {
     const objectId = new Types.ObjectId(id);
-    return this.statsModel.deleteOne({ _id: objectId }).exec();
+    const result = await this.statsModel.findByIdAndDelete(objectId).exec();
+
+    if (!result) {
+      throw new NotFoundException(`Statistiques du produit avec l'id ${id} introuvables`);
+    }
+
+    return result;
   }
+
+
 }
