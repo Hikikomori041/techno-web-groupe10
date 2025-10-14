@@ -42,7 +42,7 @@ export class AuthController {
     // Redirect to frontend dashboard with user data
     const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
     return res.redirect(
-      `${process.env.REDIRECT_LOGIN_URL}/dashboard?user=${userDataEncoded}`,
+      `${process.env.REDIRECT_LOGIN_URL}?user=${userDataEncoded}`,
     );
   }
 
