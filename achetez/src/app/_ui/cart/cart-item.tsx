@@ -20,7 +20,7 @@ export default function CartItem({item} : any){
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => removeItem(item.id)}
+                                // onClick={() => removeItem(item.id)}
                                 className="text-destructive hover:text-destructive"
                             >
                                 <Trash2 className="h-4 w-4" />
@@ -34,7 +34,7 @@ export default function CartItem({item} : any){
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8 bg-transparent"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                // onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                                 <Minus className="h-3 w-3" />
                                 <span className="sr-only">Decrease quantity</span>
@@ -44,7 +44,7 @@ export default function CartItem({item} : any){
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8 bg-transparent"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                // onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                                 <Plus className="h-3 w-3" />
                                 <span className="sr-only">Increase quantity</span>
@@ -54,7 +54,7 @@ export default function CartItem({item} : any){
                     </div>
                 </div>
             </div>
-            {item.id !== cartItems[cartItems.length - 1].id && <Separator className="mt-4" />}
+            {/*{item.id !== cartItems[cartItems.length - 1].id && <Separator className="mt-4" />}*/}
         </div>
     )
 }
