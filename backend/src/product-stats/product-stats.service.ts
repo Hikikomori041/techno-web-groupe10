@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ProductStats } from './product-stats.schema';
@@ -76,13 +76,42 @@ export class ProductStatsService {
 
   async incrementSales(id: string, increment = 1) {
     const objectId = new Types.ObjectId(id);
-    return this.statsModel
-      .findByIdAndUpdate(
-        objectId,
-        { $inc: { nombre_de_vente: increment } },
-        { new: true, upsert: true }
-      )
-      .exec();
+
+    // 🔍 On récupère la fiche de stats actuelle
+    const stat = await this.statsModel.findById(objectId).exec();
+
+    if (!stat) {
+      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${id}`);
+    }
+
+    // 🚫 Vérifie le stock avant la vente
+    if (stat.quantite_en_stock < increment) {
+      throw new BadRequestException(
+        `Stock insuffisant (${stat.quantite_en_stock} en stock, ${increment} demandés)`,
+      );
+    }
+
+    // ✅ Mise à jour : + ventes, - stock
+    stat.nombre_de_vente += increment;
+    stat.quantite_en_stock -= increment;
+
+    return stat.save();
+  }
+
+  async restock(id: string, ajout = 0) {
+    const objectId = new Types.ObjectId(id);
+
+    if (ajout <= 0) {
+      throw new BadRequestException('La quantité ajoutée doit être supérieure à 0');
+    }
+
+    const stat = await this.statsModel.findById(objectId).exec();
+    if (!stat) {
+      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${id}`);
+    }
+
+    stat.quantite_en_stock += ajout;
+    return stat.save();
   }
 
 

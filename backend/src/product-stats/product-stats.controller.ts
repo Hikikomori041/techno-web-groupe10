@@ -36,11 +36,23 @@ export class ProductStatsController {
   @Post(':id_produit/sell')
   incrementSales(
     @Param('id_produit') id: string,
-    @Body() body?: { increment?: number } // optionnel, par défaut +1
+    @Body() body?: { increment?: number }
   ) {
     const value = body?.increment ?? 1;
     return this.service.incrementSales(id, value);
   }
+
+  // 📦 POST /product-stats/:id_produit/restock → augmente le stock
+  @Post(':id_produit/restock')
+  restock(
+    @Param('id_produit') id: string,
+    @Body() body: { ajout: number }
+  ) {
+    const ajout = body?.ajout ?? 0;
+    return this.service.restock(id, ajout);
+  }
+
+
 
   // DELETE /product-stats/:id_produit
   @Delete(':id_produit')
