@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { Category } from '../categories/category.schema';
 import { Product } from './product.schema';
 import { ProductStatsService } from '../product-stats/product-stats.service';
 
@@ -8,8 +9,9 @@ import { ProductStatsService } from '../product-stats/product-stats.service';
 export class ProductsService {
   // constructor(@InjectModel(Product.name) private productModel: Model<Product>) {}
   constructor(
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
-    private readonly productStatsService: ProductStatsService, // 👈 injection du service
+    private readonly productStatsService: ProductStatsService,
   ) {}
 
   async findAll(): Promise<Product[]> {
@@ -47,4 +49,36 @@ export class ProductsService {
     // Puis supprime le produit
     return this.productModel.findByIdAndDelete(id).exec();
   }
+
+
+  async findByCategorie(categorieId: string) {
+    const objectId = new Types.ObjectId(categorieId);
+
+    // 🧭 Récupère aussi les sous-catégories
+    const subcategories = await this.categoryModel
+      .find({ id_categorie_mere: objectId }, { _id: 1 })
+      .lean();
+
+    // Liste complète des catégories à inclure
+    const ids = [objectId, ...subcategories.map(c => c._id)];
+
+    // 🎯 Recherche les produits appartenant à l'une de ces catégories
+    return this.productModel
+      .find({ id_categorie: { $in: ids } })
+      .populate('id_categorie', 'nom')
+      .exec();
+  }
+
+  // async findByCategorie(categorieId: string) {
+  //   const objectId = new Types.ObjectId(categorieId);
+  //   return this.productModel.find({
+  //     $or: [
+  //       { id_categorie: objectId },       // vrai ObjectId
+  //       { id_categorie: categorieId },    // string équivalente
+  //     ],
+  //   })
+  //   .populate('id_categorie', 'nom')
+  //   .exec();
+  // }
+
 }
