@@ -44,7 +44,9 @@ export class ProductStatsController {
 
   // POST /product-stats/:id_produit/sell → incrémente les ventes
   @Post(':id_produit/sell')
-  //todo: voir pour les accès -> l'utilisateur ne doit pas pouvoir y accéder, mais le site oui (pas un admin manuellement)
+  //todo:
+  // voir pour les accès -> l'utilisateur ne doit pas pouvoir y accéder, mais le site oui (pas un admin manuellement)
+  // je pense qu'un admin peut le faire, mais dans ce cas, le stock vendable d'un produit doit être calculé avec toutes les commandes existantes 🤔 
   @SellProductDocs()
   incrementSales(@Param('id_produit') id: string, @Body() body?: { quantity?: number }) {
     const value = body?.quantity ?? 1;

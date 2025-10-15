@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import { ProductStats } from './product-stats.schema';
 
 type ProductStatsLight = {
-  _id: string; // même que Product
+  _id: string;
   quantite_en_stock: number;
   nombre_de_vente: number;
 };
@@ -68,7 +68,7 @@ export class ProductStatsService {
 
     if (stat.quantite_en_stock < quantity) {
       throw new BadRequestException(
-        `Stock insuffisant (${stat.quantite_en_stock} en stock, ${quantity} demandés)`,
+        `Stock insuffisant (${stat.quantite_en_stock} en stock, ${quantity} ventes demandés)`,
       );
     }
 

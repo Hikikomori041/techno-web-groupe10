@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Category } from '../categories/category.schema';
+import { Category } from './categories/category.schema';
 import { Product } from './product.schema';
-import { ProductStatsService } from '../product-stats/product-stats.service';
+import { ProductStatsService } from './stats/product-stats.service';
 
 @Injectable()
 export class ProductsService {

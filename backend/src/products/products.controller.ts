@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { Product } from './product.schema';
 import { ProductsService } from './products.service';
-import { ProductStatsService } from '../product-stats/product-stats.service';
+import { ProductStatsService } from './stats/product-stats.service';
 import { Types } from 'mongoose';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
