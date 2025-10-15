@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
-import { CategoriesModule } from './categories/categories.module';
+import { CategoriesModule } from './products/categories/categories.module';
 import { ProductsModule } from './products/products.module';
-import { ProductStatsModule } from './product-stats/product-stats.module';
+import { ProductStatsModule } from './products/stats/product-stats.module';
+import { CartModule } from './cart/cart.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     CategoriesModule,
     ProductsModule,
     ProductStatsModule,
+    CartModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

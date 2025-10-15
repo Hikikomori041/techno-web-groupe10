@@ -3,7 +3,7 @@ import { Product } from './product.schema';
 import { ProductsService } from './products.service';
 import { ProductStatsService } from './stats/product-stats.service';
 import { Types } from 'mongoose';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Role } from 'src/auth/enums/role.enum';

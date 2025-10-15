@@ -17,7 +17,7 @@ import {
   GetProductsByCategoryDocs,
 } from './categories.swagger';
 
-@ApiTags('Catégories')
+@ApiTags('Catégories de produits')
 @Controller('category')
 export class CategoriesController {
   constructor(
