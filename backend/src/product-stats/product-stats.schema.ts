@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 @Schema()
 export class ProductStats extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
-  product_id: Types.ObjectId;
+  id_produit: Types.ObjectId;
 
   @Prop({ required: true, default: 0 })
   quantite_en_stock: number;

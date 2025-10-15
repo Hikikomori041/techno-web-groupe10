@@ -8,6 +8,15 @@ import { Category } from './category.schema';
 import { CategoriesService } from './categories.service';
 import { ProductsService } from '../products/products.service';
 
+import {
+  GetAllCategoriesDocs,
+  GetCategoryByIdDocs,
+  CreateCategoryDocs,
+  UpdateCategoryDocs,
+  DeleteCategoryDocs,
+  GetProductsByCategoryDocs,
+} from './categories.swagger';
+
 @ApiTags('Catégories')
 @Controller('category')
 export class CategoriesController {
@@ -17,50 +26,36 @@ export class CategoriesController {
   ) {}
 
   @Get()
+  @GetAllCategoriesDocs()
   findAll(): Promise<Category[]> {
     return this.service.findAll();
   }
 
   @Get(':id')
+  @GetCategoryByIdDocs()
   findOne(@Param('id') id: string): Promise<Category> {
     return this.service.findOne(id);
   }
 
   @Post('/create')
+  @CreateCategoryDocs()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @Roles(Role.ADMIN)
-  @ApiBody({
-    schema: {
-      example: {
-        name: 'Catégorie',
-        id_categorie_mere: '68ef526cbdfb36f434d021ce',
-      },
-    },
-  })
   create(@Body() data: Partial<Category>): Promise<Category> {
     return this.service.create(data);
   }
 
   @Put(':id')
+  @UpdateCategoryDocs()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @Roles(Role.ADMIN)
-  @ApiBody({
-    schema: {
-      example: {
-        name: 'Catégorie',
-        id_categorie_mere: '68ef526cbdfb36f434d021ce',
-      },
-    },
-  })
   update(@Param('id') id: string, @Body() data: Partial<Category>): Promise<Category> {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @DeleteCategoryDocs()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @Roles(Role.ADMIN)
   remove(@Param('id') id: string): Promise<Category> {
     return this.service.remove(id);
@@ -68,6 +63,7 @@ export class CategoriesController {
 
   // Liste des produits d'une catégorie
   @Get(':id/products')
+  @GetProductsByCategoryDocs()
   async findProduitsByCategorie(@Param('id') id: string) {
     return this.productsService.findByCategory(id);
   }

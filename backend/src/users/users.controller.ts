@@ -21,7 +21,7 @@ import {
   DeleteUserDocs,
 } from './users.swagger';
 
-@ApiTags('users')
+@ApiTags('Utilisateur')
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)

@@ -17,56 +17,30 @@ export class ProductStatsService {
   ) {}
 
   // Récupérer toutes les stats
-  async findAll(details = false): Promise<any[]> {
-    if (details) {
-      const stats = await this.statsModel.find().populate('_id', '-__v').exec();
-      return stats.map((s: any) => ({
-        _id: s._id, // c’est le produit peuplé
-        produit: s._id, // renommé pour clarté
-        quantite_en_stock: s.quantite_en_stock,
-        nombre_de_vente: s.nombre_de_vente,
-      }));
-    } else {
-      return this.statsModel
-        .find({}, { _id: 1, quantite_en_stock: 1, nombre_de_vente: 1 })
-        .lean()
-        .exec() as unknown as ProductStatsLight[];
-    }
+  async findAll(): Promise<any[]> {
+    return this.statsModel
+      .find({}, { _id: 0, id_produit: 1, quantite_en_stock: 1, nombre_de_vente: 1 })
+      .lean()
+      .exec() as unknown as ProductStatsLight[];
   }
 
   // Récupérer les stats d’un produit
   async findByProduct(productId: string, details = false): Promise<any> {
     const objectId = new Types.ObjectId(productId);
 
-    if (details) {
-      const stat = await this.statsModel
-        .findOne({ product_id: objectId }) // 👈 ici le changement
-        .populate('product_id', '-__v')
-        .exec();
-
-      if (!stat) return null;
-
-      return {
-        produit: stat.product_id, // produit complet
-        quantite_en_stock: stat.quantite_en_stock,
-        nombre_de_vente: stat.nombre_de_vente,
-      };
-    } else {
-      return this.statsModel
-        .findOne(
-          { product_id: objectId }, // 👈 ici aussi
-          { product_id: 1, quantite_en_stock: 1, nombre_de_vente: 1, _id: 0 },
-        )
-        .lean()
-        .exec();
-    }
+    return this.statsModel
+      .findOne(
+        { id_produit: objectId },
+        { id_produit: 1, quantite_en_stock: 1, nombre_de_vente: 1, _id: 0 },
+      )
+      .lean()
+      .exec();
   }
-
 
   // Créer une fiche de stats
   async create(stat: Partial<ProductStats>) {
-    if (stat.product_id && typeof stat.product_id === 'string') {
-      stat.product_id = new Types.ObjectId(stat.product_id);
+    if (stat.id_produit && typeof stat.id_produit === 'string') {
+      stat.id_produit = new Types.ObjectId(stat.id_produit);
     }
     return this.statsModel.create(stat);
   }
@@ -75,7 +49,7 @@ export class ProductStatsService {
   async updateByProduct(productId: string, update: Partial<ProductStats>) {
     const objectId = new Types.ObjectId(productId);
     return this.statsModel
-      .findOneAndUpdate({ product_id: objectId }, update, { new: true, upsert: true })
+      .findOneAndUpdate({ id_produit: objectId }, update, { new: true, upsert: true })
       .exec();
   }
 
@@ -86,7 +60,7 @@ export class ProductStatsService {
       throw new BadRequestException('Le nombre d’articles vendus doit être un entier supérieur à 0');
     }
 
-    const stat = await this.statsModel.findOne({ product_id: objectId }).exec();
+    const stat = await this.statsModel.findOne({ id_produit: objectId }).exec();
 
     if (!stat) {
       throw new BadRequestException(`Aucune statistique trouvée pour le produit ${productId}`);
@@ -111,7 +85,7 @@ export class ProductStatsService {
       throw new BadRequestException('Le nombre d’articles ajoutés doit être un entier supérieur à 0');
     }
 
-    const stat = await this.statsModel.findOne({ product_id: objectId }).exec();
+    const stat = await this.statsModel.findOne({ id_produit: objectId }).exec();
     if (!stat) {
       throw new BadRequestException(`Aucune statistique trouvée pour le produit ${productId}`);
     }
@@ -124,7 +98,7 @@ export class ProductStatsService {
   // Supprimer les stats d’un produit
   async removeByProduct(productId: string) {
     const objectId = new Types.ObjectId(productId);
-    const result = await this.statsModel.findOneAndDelete({ product_id: objectId }).exec();
+    const result = await this.statsModel.findOneAndDelete({ id_produit: objectId }).exec();
     if (!result) throw new NotFoundException(`Stats du produit ${productId} introuvables`);
     return result;
   }

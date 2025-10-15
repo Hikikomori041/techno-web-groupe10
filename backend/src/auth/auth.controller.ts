@@ -22,7 +22,7 @@ import {
   GetProfileDocs,
 } from './auth.swagger';
 
-@ApiTags('auth')
+@ApiTags('Authentification')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

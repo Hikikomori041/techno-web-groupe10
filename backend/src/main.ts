@@ -26,7 +26,7 @@ async function bootstrap() {
     .setTitle('Authentication API')
     .setDescription('Complete authentication system with Google OAuth and JWT')
     .setVersion('1.0')
-    .addTag('auth', 'Authentication endpoints')
+    .addTag('Authentification', 'Authentication endpoints')
     .addBearerAuth(
       {
         type: 'http',
