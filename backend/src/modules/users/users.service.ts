@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
-import { Role } from '../auth/enums/role.enum';
+import { Role } from '../../common/enums/role.enum';
 
 @Injectable()
 export class UsersService {

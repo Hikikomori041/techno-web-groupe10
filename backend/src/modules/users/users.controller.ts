@@ -11,8 +11,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { UpdateRoleDto } from '../auth/dto/update-role.dto';
 import {
   GetAllUsersDocs,
@@ -33,7 +33,7 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
-
+ 
   @Get(':id')
   @GetUserByIdDocs()
   findOne(@Param('id') id: string) {

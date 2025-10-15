@@ -4,8 +4,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import { User } from '../schemas/user.schema';
-import { Role } from '../enums/role.enum';
+import { User } from '../../users/schemas/user.schema';
+import { Role } from '../../../common/enums/role.enum';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
