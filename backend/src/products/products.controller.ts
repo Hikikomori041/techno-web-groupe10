@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Product } from './product.schema';
 import { ProductsService } from './products.service';
 import { ProductStatsService } from '../product-stats/product-stats.service';
 import { Types } from 'mongoose';
 
+@ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(

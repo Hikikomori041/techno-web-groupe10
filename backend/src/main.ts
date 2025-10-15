@@ -23,10 +23,13 @@ async function bootstrap() {
 
   // Swagger API Documentation
   const config = new DocumentBuilder()
-    .setTitle('Authentication API')
-    .setDescription('Complete authentication system with Google OAuth and JWT')
+    .setTitle('E-Commerce API')
+    .setDescription('Complete API with authentication, products, and user management')
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
+    .addTag('users', 'User management endpoints (Admin only)')
+    .addTag('products', 'Product management endpoints')
+    .addTag('product-stats', 'Product statistics endpoints')
     .addBearerAuth(
       {
         type: 'http',
