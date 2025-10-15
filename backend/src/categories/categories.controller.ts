@@ -37,6 +37,6 @@ export class CategoriesController {
   // Liste des produits d'une catégorie
   @Get(':id/products')
   async findProduitsByCategorie(@Param('id') id: string) {
-    return this.productsService.findByCategorie(id);
+    return this.productsService.findByCategory(id);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Category } from '../categories/category.schema';
@@ -25,9 +25,16 @@ export class ProductsService {
   }
 
   async create(product: Partial<Product>): Promise<Product> {
+    // Si id_categorie est une string → on la convertit en ObjectId
+    if (product.id_categorie && typeof product.id_categorie === 'string') {
+      product.id_categorie = new Types.ObjectId(product.id_categorie);
+    }
+
+    // Création du produit
     const newProduct = new this.productModel(product);
     return newProduct.save();
   }
+
 
   async update(id: string, product: Partial<Product>): Promise<Product | null> {
     const existingProduct = await this.productModel.findById(id).exec();
@@ -51,34 +58,46 @@ export class ProductsService {
   }
 
 
-  async findByCategorie(categorieId: string) {
-    const objectId = new Types.ObjectId(categorieId);
+  async findByCategory(categoryId: string) {
+    // 1) Vérifie le format de l’ObjectId
+    if (!Types.ObjectId.isValid(categoryId)) {
+      throw new BadRequestException(`ID de catégorie invalide: ${categoryId}`);
+    }
+    const objectId = new Types.ObjectId(categoryId);
 
-    // 🧭 Récupère aussi les sous-catégories
-    const subcategories = await this.categoryModel
-      .find({ id_categorie_mere: objectId }, { _id: 1 })
-      .lean();
+    // 2) Vérifie que la catégorie existe
+    const exists = await this.categoryModel.exists({ _id: objectId });
+    if (!exists) {
+      throw new NotFoundException(`Category introuvable: ${categoryId}`);
+    }
 
-    // Liste complète des catégories à inclure
-    const ids = [objectId, ...subcategories.map(c => c._id)];
+    // 3) Fonction récursive interne pour récupérer toute la descendance
+    const getAllSubcategories = async (parentId: Types.ObjectId): Promise<Types.ObjectId[]> => {
+    const subs = await this.categoryModel.find({ id_categorie_mere: parentId }, { _id: 1 }).lean();
 
-    // 🎯 Recherche les produits appartenant à l'une de ces catégories
+    if (!subs.length) return [];
+
+    // On caste explicitement en ObjectId
+    const deeper = await Promise.all(
+      subs.map(s => getAllSubcategories(new Types.ObjectId(s._id as any)))
+    );
+
+    // Même traitement ici
+    return [...subs.map(s => new Types.ObjectId(s._id as any)), ...deeper.flat()];
+  };
+
+
+    // 4) Récupère toutes les sous-catégories (profondément)
+    const allSubs = await getAllSubcategories(objectId);
+
+    // 5) Crée la liste complète d’IDs à inclure
+    const ids = [objectId, ...allSubs];
+
+    // 6) Renvoie tous les produits associés
     return this.productModel
       .find({ id_categorie: { $in: ids } })
       .populate('id_categorie', 'nom')
       .exec();
   }
-
-  // async findByCategorie(categorieId: string) {
-  //   const objectId = new Types.ObjectId(categorieId);
-  //   return this.productModel.find({
-  //     $or: [
-  //       { id_categorie: objectId },       // vrai ObjectId
-  //       { id_categorie: categorieId },    // string équivalente
-  //     ],
-  //   })
-  //   .populate('id_categorie', 'nom')
-  //   .exec();
-  // }
 
 }
