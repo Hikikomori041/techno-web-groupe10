@@ -35,79 +35,85 @@ export class ProductStatsService {
   }
 
   // Récupérer les stats d’un produit
-  async findByProduct(id: string, details = false): Promise<any> {
-    const objectId = new Types.ObjectId(id);
+  async findByProduct(productId: string, details = false): Promise<any> {
+    const objectId = new Types.ObjectId(productId);
+
     if (details) {
       const stat = await this.statsModel
-        .findById(objectId)
-        .populate('_id', '-__v')
+        .findOne({ product_id: objectId }) // 👈 ici le changement
+        .populate('product_id', '-__v')
         .exec();
+
       if (!stat) return null;
 
       return {
-        _id: id,
-        produit: stat._id, // produit complet
+        produit: stat.product_id, // produit complet
         quantite_en_stock: stat.quantite_en_stock,
         nombre_de_vente: stat.nombre_de_vente,
       };
     } else {
       return this.statsModel
-        .findById(objectId, { _id: 1, quantite_en_stock: 1, nombre_de_vente: 1 })
+        .findOne(
+          { product_id: objectId }, // 👈 ici aussi
+          { product_id: 1, quantite_en_stock: 1, nombre_de_vente: 1, _id: 0 },
+        )
         .lean()
-        .exec() as unknown as ProductStatsLight;
+        .exec();
     }
   }
 
+
   // Créer une fiche de stats
   async create(stat: Partial<ProductStats>) {
-    if (stat._id && typeof stat._id === 'string') {
-      stat._id = new Types.ObjectId(stat._id);
+    if (stat.product_id && typeof stat.product_id === 'string') {
+      stat.product_id = new Types.ObjectId(stat.product_id);
     }
     return this.statsModel.create(stat);
   }
 
   // Mettre à jour les stats
-  async updateByProduct(id: string, update: Partial<ProductStats>) {
-    const objectId = new Types.ObjectId(id);
+  async updateByProduct(productId: string, update: Partial<ProductStats>) {
+    const objectId = new Types.ObjectId(productId);
     return this.statsModel
-      .findByIdAndUpdate(objectId, update, { new: true, upsert: true })
+      .findOneAndUpdate({ product_id: objectId }, update, { new: true, upsert: true })
       .exec();
   }
 
-  async incrementSales(id: string, increment = 1) {
-    const objectId = new Types.ObjectId(id);
+  async incrementSales(productId: string, quantity = 1) {
+    const objectId = new Types.ObjectId(productId);
 
-    // 🔍 On récupère la fiche de stats actuelle
-    const stat = await this.statsModel.findById(objectId).exec();
-
-    if (!stat) {
-      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${id}`);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException('Le nombre d’articles vendus doit être un entier supérieur à 0');
     }
 
-    // 🚫 Vérifie le stock avant la vente
-    if (stat.quantite_en_stock < increment) {
+    const stat = await this.statsModel.findOne({ product_id: objectId }).exec();
+
+    if (!stat) {
+      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${productId}`);
+    }
+
+    if (stat.quantite_en_stock < quantity) {
       throw new BadRequestException(
-        `Stock insuffisant (${stat.quantite_en_stock} en stock, ${increment} demandés)`,
+        `Stock insuffisant (${stat.quantite_en_stock} en stock, ${quantity} demandés)`,
       );
     }
 
-    // ✅ Mise à jour : + ventes, - stock
-    stat.nombre_de_vente += increment;
-    stat.quantite_en_stock -= increment;
+    stat.nombre_de_vente += quantity;
+    stat.quantite_en_stock -= quantity;
 
     return stat.save();
   }
 
-  async restock(id: string, quantity = 0) {
-    const objectId = new Types.ObjectId(id);
+  async restock(productId: string, quantity = 0) {
+    const objectId = new Types.ObjectId(productId);
 
-    if (quantity <= 0) {
-      throw new BadRequestException('La quantité ajoutée doit être supérieure à 0');
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException('Le nombre d’articles ajoutés doit être un entier supérieur à 0');
     }
 
-    const stat = await this.statsModel.findById(objectId).exec();
+    const stat = await this.statsModel.findOne({ product_id: objectId }).exec();
     if (!stat) {
-      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${id}`);
+      throw new BadRequestException(`Aucune statistique trouvée pour le produit ${productId}`);
     }
 
     stat.quantite_en_stock += quantity;
@@ -116,14 +122,10 @@ export class ProductStatsService {
 
 
   // Supprimer les stats d’un produit
-  async removeByProduct(id: string) {
-    const objectId = new Types.ObjectId(id);
-    const result = await this.statsModel.findByIdAndDelete(objectId).exec();
-
-    if (!result) {
-      throw new NotFoundException(`Statistiques du produit avec l'id ${id} introuvables`);
-    }
-
+  async removeByProduct(productId: string) {
+    const objectId = new Types.ObjectId(productId);
+    const result = await this.statsModel.findOneAndDelete({ product_id: objectId }).exec();
+    if (!result) throw new NotFoundException(`Stats du produit ${productId} introuvables`);
     return result;
   }
 

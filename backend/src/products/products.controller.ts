@@ -26,9 +26,9 @@ export class ProductsController {
   async create(@Body() product: Partial<Product>) {
     const newProduct = await this.service.create(product);
 
-    // Crée la fiche de stats associée (même ID)
+    // Crée la fiche de stats liée à ce produit
     await this.productStatsService.create({
-      _id: newProduct._id as Types.ObjectId, // ✅ cast explicite
+      product_id: new Types.ObjectId(String(newProduct._id)),
       quantite_en_stock: 0,
       nombre_de_vente: 0,
     });

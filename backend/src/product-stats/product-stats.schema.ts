@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-@Schema({ _id: false })
+@Schema()
 export class ProductStats extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
-  declare _id: Types.ObjectId; // ✅ "declare" = je sais ce que je fais
+  product_id: Types.ObjectId;
 
   @Prop({ required: true, default: 0 })
   quantite_en_stock: number;
@@ -14,4 +14,5 @@ export class ProductStats extends Document {
 }
 
 export const ProductStatsSchema = SchemaFactory.createForClass(ProductStats);
+
 

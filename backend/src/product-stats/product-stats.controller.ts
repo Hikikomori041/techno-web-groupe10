@@ -13,18 +13,12 @@ export class ProductStatsController {
     return this.service.findAll(showDetails);
   }
 
-  // GET /product-stats/:id
-  @Get(':id')
-  findByProduct(@Param('id') id: string, @Query('details') details?: string) {
+  // GET /product-stats/:id_produit
+  @Get(':id_produit')
+  findByProduct(@Param('id_produit') id: string, @Query('details') details?: string) {
     const showDetails = details === 'true';
     return this.service.findByProduct(id, showDetails);
   }
-
-  // POST /product-stats
-  // @Post()
-  // create(@Body() data: Partial<ProductStats>) {
-  //   return this.service.create(data);
-  // }
 
   // POST /product-stats/:id_produit → mise à jour quantité
   @Post(':id_produit')
@@ -36,13 +30,13 @@ export class ProductStatsController {
   @Post(':id_produit/sell')
   incrementSales(
     @Param('id_produit') id: string,
-    @Body() body?: { increment?: number }
+    @Body() body?: { quantity?: number }
   ) {
-    const value = body?.increment ?? 1;
+    const value = body?.quantity ?? 1;
     return this.service.incrementSales(id, value);
   }
 
-  // 📦 POST /product-stats/:id_produit/restock → augmente le stock
+  // POST /product-stats/:id_produit/restock → augmente le stock
   @Post(':id_produit/restock')
   restock(
     @Param('id_produit') id: string,
@@ -52,11 +46,7 @@ export class ProductStatsController {
     return this.service.restock(id, quantity);
   }
 
-
-
-  // DELETE /product-stats/:id_produit
-  // @Delete(':id_produit')
-  // remove(@Param('id_produit') id: string) {
-  //   return this.service.removeByProduct(id);
-  // }
+  // Note:
+  //  Pas de route create ni de route delete
+  //  La création et suppression des statistiques se fait en même temps que celles du produit lui-même (dans products.service.ts)
 }

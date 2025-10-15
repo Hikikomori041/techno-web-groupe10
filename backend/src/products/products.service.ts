@@ -41,10 +41,10 @@ export class ProductsService {
       throw new NotFoundException(`Produit avec l'id ${id} introuvable`);
     }
 
-    // 🧹 Supprime la fiche de stats associée (même _id)
+    // Supprime la fiche de stats associée (même _id)
     await this.productStatsService.removeByProduct(id);
 
-    // 🗑️ Puis supprime le produit
+    // Puis supprime le produit
     return this.productModel.findByIdAndDelete(id).exec();
   }
 }
