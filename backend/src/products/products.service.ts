@@ -17,7 +17,10 @@ export class ProductsService {
 
   async findAll(): Promise<Product[]> {
     // Penser à ne pas envoyer l'id (pour des raisons de sécurité)
-    return this.productModel.find().exec();
+    return this.productModel
+    .find()
+    .sort({ updatedAt: -1, date_de_creation: -1 }) // tri décroissant
+    .exec();
   }
 
   async findOne(id: string): Promise<Product | null> {
