@@ -27,6 +27,7 @@ export default function LoginPage() {
     try {
       const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
+        credentials: 'include', // ✅ Important: include cookies
         headers: {
           'Content-Type': 'application/json',
         },
@@ -39,13 +40,11 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store JWT token
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect to dashboard
-      const userDataEncoded = encodeURIComponent(JSON.stringify(data));
-      router.push(`/dashboard?user=${userDataEncoded}`);
+      // ✅ Le JWT est automatiquement stocké dans un cookie httpOnly par le backend
+      // ❌ PAS de localStorage - vulnérable aux attaques XSS
+      
+      // ✅ Redirection vers la page produits
+      router.push('/products');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

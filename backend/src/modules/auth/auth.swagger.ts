@@ -95,3 +95,55 @@ export const GetProfileDocs = () =>
     ApiResponse({ status: 401, description: 'Unauthorized' }),
   );
 
+export const LogoutDocs = () =>
+  applyDecorators(
+    ApiOperation({ 
+      summary: 'Logout user',
+      description: 'Clear the authentication cookie to log out the user. No authentication required.',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'User logged out successfully',
+      schema: {
+        example: {
+          message: 'Logged out successfully',
+        },
+      },
+    }),
+  );
+
+export const CheckAuthDocs = () =>
+  applyDecorators(
+    ApiOperation({ 
+      summary: 'Check authentication status',
+      description: 'Verify if the user is authenticated and retrieve their profile. Uses JWT token from cookie.',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'User is authenticated',
+      schema: {
+        example: {
+          authenticated: true,
+          user: {
+            _id: '1234567890',
+            email: 'user@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            provider: 'local',
+            roles: ['user'],
+            createdAt: '2025-10-08T12:00:00.000Z',
+          },
+        },
+      },
+    }),
+    ApiResponse({ 
+      status: 401, 
+      description: 'User is not authenticated',
+      schema: {
+        example: {
+          authenticated: false,
+        },
+      },
+    }),
+  );
+

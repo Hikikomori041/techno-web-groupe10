@@ -38,9 +38,8 @@ export default function RegisterPage() {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Redirect to dashboard
-      const userDataEncoded = encodeURIComponent(JSON.stringify(data));
-      router.push(`/dashboard?user=${userDataEncoded}`);
+      // Redirect to products page
+      router.push('/products');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

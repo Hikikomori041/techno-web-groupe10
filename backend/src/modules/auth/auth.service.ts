@@ -45,12 +45,16 @@ export class AuthService implements OnModuleInit {
   // Google OAuth Login
   googleLogin(req) {
     if (!req.user) {
-      return { message: 'No user from google' };
+      throw new UnauthorizedException('No user from google');
     }
+
+    // Generate JWT token for Google user
+    const token = this.generateToken(req.user);
 
     return {
       message: 'User information from google',
       user: req.user,
+      access_token: token,
     };
   }
 
@@ -134,6 +138,15 @@ export class AuthService implements OnModuleInit {
     };
 
     return this.jwtService.sign(payload);
+  }
+
+  // Verify JWT token (public pour le controller)
+  public verifyToken(token: string) {
+    try {
+      return this.jwtService.verify(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 
   // Get all users (admin only)

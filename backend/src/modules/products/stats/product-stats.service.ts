@@ -115,15 +115,13 @@ export class ProductStatsService {
   }
 
 
-  // Supprimer les stats d’un produit
+  // Supprimer les stats d'un produit
   async removeByProduct(id: string) {
     const objectId = new Types.ObjectId(id);
     const result = await this.statsModel.findByIdAndDelete(objectId).exec();
 
-    if (!result) {
-      throw new NotFoundException(`Statistiques du produit avec l'id ${id} introuvables`);
-    }
-
+    // Don't throw error if stats don't exist - just return null
+    // This allows deleting products even if stats weren't created
     return result;
   }
 

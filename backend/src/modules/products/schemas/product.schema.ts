@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 export class Product extends Document {
   @Prop({ required: true })
   nom: string;
@@ -15,11 +15,20 @@ export class Product extends Document {
   @Prop([String])
   images?: string[];
 
-  @Prop({ type: Object })
-  specifications?: Record<string, any>;
+  @Prop({ 
+    type: [{ key: { type: String }, value: { type: String } }], 
+    default: [] 
+  })
+  specifications: Array<{ key: string; value: string }>;
 
-  @Prop({ required: true })
-  id_categorie: number;
+  @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
+  categoryId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  moderatorId?: Types.ObjectId;
+
+  @Prop({ required: true, default: 0, min: 0 })
+  quantite_en_stock: number;
 
   @Prop({ default: Date.now })
   date_de_creation: Date;
