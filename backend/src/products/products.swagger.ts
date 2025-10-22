@@ -5,6 +5,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 export const GetAllProductsDocs = () =>
@@ -129,4 +130,39 @@ export const DeleteProductDocs = () =>
     ApiResponse({ status: 401, description: 'Non authentifié' }),
     ApiResponse({ status: 403, description: 'Accès refusé - rôle Administrateur requis' }),
     ApiResponse({ status: 404, description: 'Produit non trouvé' }),
+  );
+export const CountProductsInCategoryDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Compter les produits d’une catégorie',
+      description: `Retourne le nombre total de produits appartenant à une catégorie donnée.
+      
+      Si le paramètre **cascade=true** est fourni, la route compte également les produits des sous-catégories.`,
+    }),
+    ApiParam({
+      name: 'categoryId',
+      required: true,
+      description: 'ID de la catégorie (ObjectId MongoDB)',
+      example: '68ef526cbdfb36f434d021ce',
+    }),
+    ApiQuery({
+      name: 'cascade',
+      required: false,
+      type: Boolean,
+      description: 'Inclure les sous-catégories (true/false). Par défaut: false',
+      example: false,
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Nombre de produits trouvés',
+      schema: {
+        example: {
+          categoryId: '68ef526cbdfb36f434d021ce',
+          cascade: true,
+          count: 12,
+        },
+      },
+    }),
+    ApiResponse({ status: 400, description: 'ID de catégorie invalide' }),
+    ApiResponse({ status: 404, description: 'Catégorie introuvable' }),
   );

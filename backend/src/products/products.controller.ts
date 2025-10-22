@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { Product } from './product.schema';
 import { ProductsService } from './products.service';
 import { ProductStatsService } from './stats/product-stats.service';
 import { Types } from 'mongoose';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Role } from 'src/auth/enums/role.enum';
@@ -14,6 +14,7 @@ import {
   CreateProductDocs,
   UpdateProductDocs,
   DeleteProductDocs,
+  CountProductsInCategoryDocs,
 } from './products.swagger';
 
 @ApiTags('Produits')
@@ -71,5 +72,17 @@ export class ProductsController {
   @Roles(Role.ADMIN)
   async remove(@Param('id') id: string): Promise<Product | null> {
     return this.service.remove(id);
+  }
+
+  
+  @Get('count/:id_categorie')
+  @CountProductsInCategoryDocs()
+  async countByCategory(
+    @Param('id_categorie') categoryId: string,
+    @Query('cascade') cascade?: string,
+  ) {
+    const cascadeBool = cascade === 'true'; // false par défaut si absent
+    const count = await this.service.countByCategory(categoryId, cascadeBool);
+    return { categoryId, cascade: cascadeBool, count };
   }
 }

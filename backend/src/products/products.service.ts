@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Category } from './categories/category.schema';
 import { Product } from './product.schema';
 import { ProductStatsService } from './stats/product-stats.service';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class ProductsService {
@@ -73,18 +74,18 @@ export class ProductsService {
 
     // 3) Fonction récursive interne pour récupérer toute la descendance
     const getAllSubcategories = async (parentId: Types.ObjectId): Promise<Types.ObjectId[]> => {
-    const subs = await this.categoryModel.find({ id_categorie_mere: parentId }, { _id: 1 }).lean();
+      const subs = await this.categoryModel.find({ id_categorie_mere: parentId }, { _id: 1 }).lean();
 
-    if (!subs.length) return [];
+      if (!subs.length) return [];
 
-    // On caste explicitement en ObjectId
-    const deeper = await Promise.all(
-      subs.map(s => getAllSubcategories(new Types.ObjectId(s._id as any)))
-    );
+      // On caste explicitement en ObjectId
+      const deeper = await Promise.all(
+        subs.map(s => getAllSubcategories(new Types.ObjectId(s._id as any)))
+      );
 
-    // Même traitement ici
-    return [...subs.map(s => new Types.ObjectId(s._id as any)), ...deeper.flat()];
-  };
+      // Même traitement ici
+      return [...subs.map(s => new Types.ObjectId(s._id as any)), ...deeper.flat()];
+    };
 
 
     // 4) Récupère toutes les sous-catégories (profondément)
@@ -99,5 +100,62 @@ export class ProductsService {
       .populate('id_categorie', 'nom')
       .exec();
   }
+
+
+  async countByCategory(categoryId: string, cascade = false): Promise<number> {
+    if (!Types.ObjectId.isValid(categoryId)) {
+      throw new BadRequestException(`ID de catégorie invalide: ${categoryId}`);
+    }
+    const root = new Types.ObjectId(categoryId);
+
+    const exists = await this.categoryModel.exists({ _id: root });
+    if (!exists) throw new NotFoundException(`Catégorie introuvable: ${categoryId}`);
+
+    // si pas de cascade, on compte direct (mais en tolérant les deux formats)
+    if (!cascade) {
+      return this.productModel.countDocuments({
+        $or: [
+          { id_categorie: root },
+          { id_categorie: categoryId },
+        ],
+      });
+    }
+
+    // sinon on récupère toutes les sous-catégories (même logique que ta version OK)
+    const getAllSubcategories = async (parentId: Types.ObjectId): Promise<Types.ObjectId[]> => {
+      const subs = await this.categoryModel
+        .find({
+          $or: [
+            { 'id_categorie_mere._id': parentId },
+            { id_categorie_mere: parentId },
+          ],
+        }, { _id: 1 })
+        .lean();
+
+      if (!subs.length) return [];
+      const deeper = await Promise.all(
+        subs.map(s => getAllSubcategories(new Types.ObjectId(s._id as any)))
+      );
+      return [...subs.map(s => new Types.ObjectId(s._id as any)), ...deeper.flat()];
+    };
+
+    const allSubs = await getAllSubcategories(root);
+    const ids = [root, ...allSubs];
+    const idsStr = ids.map(i => i.toString());
+
+    // 🧠 ICI on compte les produits dont id_categorie est soit ObjectId, soit string
+    const count = await this.productModel.countDocuments({
+      $or: [
+        { id_categorie: { $in: ids } },
+        { id_categorie: { $in: idsStr } },
+      ],
+    });
+
+    console.log('Catégories prises en compte :', idsStr);
+    console.log('Produits trouvés :', count);
+
+    return count;
+  }
+
 
 }
