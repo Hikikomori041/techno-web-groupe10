@@ -4,7 +4,7 @@ import {useState} from "react"
 import {useParams} from "next/navigation"
 import {Header} from "@/app/_ui/header"
 import {Footer} from "@/app/_ui/footer"
-import {ProductGrid} from "@/app/_ui/products/grid"
+import {ProductGrid} from "@/app/_ui/products/product-grid"
 import {CategoryFilters} from "@/app/_ui/category/filter"
 import {Button} from "@/components/ui/button"
 import {ChevronLeft, ChevronRight, Laptop, Smartphone, Headphones, Monitor} from "lucide-react"
@@ -109,7 +109,7 @@ export default function CategoryPage() {
                                 </p>
                             </div>
 
-                            <ProductGrid products={products}/>
+                            {/*<ProductGrid products={products}/>*/}
 
                             {/* Pagination */}
                             <div className="mt-12 flex items-center justify-center gap-2">

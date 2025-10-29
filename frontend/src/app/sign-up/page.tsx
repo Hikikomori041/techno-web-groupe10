@@ -8,7 +8,7 @@ import {Checkbox} from "@/components/ui/checkbox"
 import {useRouter} from "next/navigation";
 import {useState} from "react";
 import {authService} from '@/lib/api/services/auth.service';
-import {RegisterCredentials} from '@/lib/api/types/api.types';
+import {RegisterCredentials} from '@/lib/api/definitions';
 
 
 export default function SignUpPage() {

@@ -17,20 +17,13 @@ class ApiClient {
         // Default headers
         const config: RequestInit = {
             ...options,
+            credentials: 'include', // Include cookies
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers,
             },
         };
 
-        // Add authentication token (if exists)
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers = {
-                ...config.headers,
-                Authorization: `Bearer ${token}`,
-            };
-        }
 
         try {
             const response = await fetch(url, config);
@@ -54,11 +47,11 @@ class ApiClient {
     }
 
     // HTTP Methods
-    async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    async get<T>(endpoint: string, credentials?: boolean, params?: Record<string, any>): Promise<T> {
         const queryString = params
             ? '?' + new URLSearchParams(params).toString()
             : '';
-        return this.request<T>(`${endpoint}${queryString}`, { method: 'GET' });
+        return this.request<T>(`${endpoint}${queryString}`, {method: 'GET'});
     }
 
     async post<T>(endpoint: string, data?: any): Promise<T> {
@@ -83,7 +76,7 @@ class ApiClient {
     }
 
     async delete<T>(endpoint: string): Promise<T> {
-        return this.request<T>(endpoint, { method: 'DELETE' });
+        return this.request<T>(endpoint, {method: 'DELETE'});
     }
 
     // File upload

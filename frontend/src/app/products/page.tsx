@@ -1,21 +1,38 @@
 "use client"
 
-import { useState } from "react"
-import { Footer } from "@/app/_ui/footer"
-import { ProductGrid } from "@/app/_ui/products/grid"
-import { ProductFilters } from "@/app/_ui/products/filter"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import {useState, useEffect} from "react"
+import {Footer} from "@/app/_ui/footer"
+import {ProductGrid} from "@/app/_ui/products/product-grid"
+import {ProductFilters} from "@/app/_ui/products/filter"
+import {Button} from "@/components/ui/button"
+import {ChevronLeft, ChevronRight} from "lucide-react"
 import {Header} from "@/app/_ui/header";
-import {products} from "@/lib/db";
+// import {products} from "@/lib/db";
+import {productsService} from "@/lib/api/services/products.service";
+import {categoriesService} from "@/lib/api/services/categories.service";
+import {Product} from "@/lib/api/definitions";
 
 export default function ProductsPage() {
     const [currentPage, setCurrentPage] = useState(1)
     const totalPages = 5
+    const [products, setProducts] = useState<Product[]>([]);
+    useEffect(() => {
+        async function fetchProducts() {
+            try {
+                const data = await productsService.getProducts();
+                setProducts(data);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
+        }
+
+        fetchProducts();
+
+    }, [])
 
     return (
         <div className="min-h-screen flex flex-col">
-<Header/>
+            <Header/>
             <main className="flex-1 bg-background">
                 <div className="container mx-auto px-4 lg:px-8 py-8">
                     <div className="mb-8">
@@ -26,21 +43,23 @@ export default function ProductsPage() {
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Filter Sidebar */}
                         <aside className="lg:w-64 flex-shrink-0">
-                            <ProductFilters />
+                            <ProductFilters/>
                         </aside>
 
                         {/* Products Grid */}
                         <div className="flex-1">
                             <div className="mb-6 flex items-center justify-between">
                                 <p className="text-sm text-muted-foreground">
-                                    Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, 100)} of 100 products
+                                    Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, 100)} of 100
+                                    products
                                 </p>
                             </div>
 
-                            <ProductGrid products={products}/>
+                            {/*<ProductGrid products={products}/>*/}
 
                             {/* Pagination */}
-                            <div className="mt-12 flex items-center justify-center gap-2">
+                            {/* till we add the separate component for pagination */}
+                            {/* <div className="mt-12 flex items-center justify-center gap-2">
                                 <Button
                                     variant="outline"
                                     size="icon"
@@ -70,13 +89,13 @@ export default function ProductsPage() {
                                 >
                                     <ChevronRight className="h-4 w-4" />
                                 </Button>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
             </main>
 
-            <Footer />
+            <Footer/>
         </div>
     )
 }

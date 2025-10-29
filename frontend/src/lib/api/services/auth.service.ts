@@ -1,37 +1,28 @@
-import { apiClient } from '@/lib/api/clients';
-import { ENDPOINTS } from '@/lib/api/endpoints';
-import {LoginCredentials, RegisterCredentials, AuthResponse, User} from '@/lib/api/types/api.types';
+import {apiClient} from '@/lib/api/clients';
+import {ENDPOINTS} from '@/lib/api/endpoints';
+import { LoginCredentials, RegisterCredentials, User} from '@/lib/api/definitions';
+import {useRouter} from "next/navigation";
+
+
+
+const router = useRouter();
+
 
 export const authService = {
     // Email/Password Login
-    login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-        const response = await apiClient.post<AuthResponse>(
+    login: async (credentials: LoginCredentials) => {
+        return await apiClient.post(
             ENDPOINTS.AUTH.LOGIN,
             credentials
         );
-
-        // Store tokens in localStorage
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('access_token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-        }
-
-        return response;
     },
 
     // Register
-    register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
-        const response = await apiClient.post<AuthResponse>(
+    register: async (credentials: RegisterCredentials) => {
+        return await apiClient.post(
             ENDPOINTS.AUTH.REGISTER,
             credentials
         );
-
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('access_token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-        }
-
-        return response;
     },
 
     // Google OAuth (returns redirect URL)
@@ -44,16 +35,14 @@ export const authService = {
         try {
             await apiClient.post(ENDPOINTS.AUTH.LOGOUT);
         } finally {
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('user');
-            }
+            alert("Logged out successfully.");
+            router.push('/login');
         }
     },
 
     // Get current user
-    getCurrentUser: async () => {
-        return apiClient.get(ENDPOINTS.AUTH.ME);
+    getUserprofile: async () => {
+        return apiClient.get(ENDPOINTS.AUTH.PROFILE, true);
     },
 
     // Check if user is authenticated
