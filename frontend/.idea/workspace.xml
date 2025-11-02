@@ -5,25 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="06cf50c5-3721-4db3-9ca4-86c203dfbe27" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/app/_ui/products/product-grid.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/lib/api/services/products.service.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/_ui/products/product-filter.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/favicon-simple.ico" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/_ui/products/grid.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/_ui/products/filter.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/_ui/products/product-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/_ui/products/product-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/category/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/category/[slug]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/favicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/favicon.ico" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/_ui/products/product-grid.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/_ui/products/product-grid.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/favicon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/not-found.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/not-found.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/products/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/products/[id]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/products/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/products/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/sign-in/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-in/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/sign-up/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/sign-up/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/clients.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/clients.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/definitions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/definitions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/endpoints.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/endpoints.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/services/auth.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/auth.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/services/product.service.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/types/api.types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/services/categories.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/categories.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/services/products.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/products.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/api/services/users.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/users.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/cartApi.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/categoriesApi.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/ordersApi.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/statsApi.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/usersApi.ts" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,7 +90,7 @@
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;seance-03-integration&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;seance-04-integration&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/pc/Documents/info_fst_nancy/techno-web/techno-web-groupe10/frontend/src/app&quot;,
@@ -95,7 +100,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;npm.Next.js: server-side.executor&quot;: &quot;Run&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\pc\\Documents\\info_fst_nancy\\techno-web\\techno-web-groupe10\\frontend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
@@ -146,6 +151,9 @@
       <workItem from="1760508058020" duration="12160000" />
       <workItem from="1761113172933" duration="12279000" />
       <workItem from="1761755897211" duration="3490000" />
+      <workItem from="1761996551995" duration="23295000" />
+      <workItem from="1762093780607" duration="629000" />
+      <workItem from="1762094458942" duration="8020000" />
     </task>
     <servers />
   </component>

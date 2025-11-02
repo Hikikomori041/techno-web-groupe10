@@ -1,12 +1,10 @@
 import {apiClient} from '@/lib/api/clients';
 import {ENDPOINTS} from '@/lib/api/endpoints';
-import { LoginCredentials, RegisterCredentials, User} from '@/lib/api/definitions';
+import { LoginCredentials, RegisterCredentials, AuthCheckResponse} from '@/lib/api/definitions';
 import {useRouter} from "next/navigation";
 
 
-
 const router = useRouter();
-
 
 export const authService = {
     // Email/Password Login
@@ -40,21 +38,20 @@ export const authService = {
         }
     },
 
-    // Get current user
-    getUserprofile: async () => {
-        return apiClient.get(ENDPOINTS.AUTH.PROFILE, true);
-    },
-
     // Check if user is authenticated
-    isAuthenticated: (): boolean => {
-        if (typeof window === 'undefined') return false;
-        return !!localStorage.getItem('access_token');
-    },
+    isAuthenticated(): Promise<AuthCheckResponse> {
+        try {
+            const response = await apiClient.get(ENDPOINTS.AUTH.CHECK,ENDPOINTS.CREDENTIALS.INCLUDE)
 
-    // Get stored user
-    getStoredUser: (): User | null => {
-        if (typeof window === 'undefined') return null;
-        const userStr = localStorage.getItem('user');
-        return userStr ? JSON.parse(userStr) : null;
-    },
+            if (!response.ok) {
+                return { authenticated: false };
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            return { authenticated: false };
+        }
+    }
 };

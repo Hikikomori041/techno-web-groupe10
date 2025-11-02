@@ -21,6 +21,7 @@ export const ENDPOINTS = {
         DELETE: (id: string) => `/categories/${id}`,
     },
     PRODUCTS: {
+        DASHBOARD_ALL: '/products/dashboard/all',
         ALL: '/products',
         ONE: (id: string) => `/products/${id}`,
         CREATE: '/products/create',
@@ -42,7 +43,8 @@ export const ENDPOINTS = {
         UPDATE_STATUS: (id: string) => `/orders/${id}/status`,
         UPDATE_PAYMENT: (id: string) => `/orders/${id}/payment`,
         DELETE: (id: string) => `/orders/${id}`,
+    },
+    CREDENTIALS: {
+        INCLUDE: {withCredentials: true}
     }
-
-
 };
