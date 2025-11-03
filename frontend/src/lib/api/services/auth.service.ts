@@ -1,6 +1,6 @@
 import {apiClient} from '@/lib/api/clients';
 import {ENDPOINTS} from '@/lib/api/endpoints';
-import {LoginCredentials, RegisterCredentials, AuthCheckResponse} from '@/lib/api/definitions';
+import {LoginCredentials, RegisterCredentials, AuthCheckResponse, User} from '@/lib/api/definitions';
 
 export const authService = {
     // Email/Password Login
@@ -41,6 +41,12 @@ export const authService = {
     // Check if user is authenticated
     async isAuthenticated(): Promise<AuthCheckResponse> {
         const res = await apiClient.get(ENDPOINTS.AUTH.CHECK, ENDPOINTS.CREDENTIALS.INCLUDE);
+        return res.data;
+    },
+
+
+    async profile(): Promise<User> {
+        const res = await apiClient.get(ENDPOINTS.AUTH.PROFILE, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     }
 };

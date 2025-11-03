@@ -44,6 +44,9 @@ export const ENDPOINTS = {
         UPDATE_PAYMENT: (id: string) => `/orders/${id}/payment`,
         DELETE: (id: string) => `/orders/${id}`,
     },
+    STATS:{
+        DASHBOARD: '/stats/dashboard',
+    },
     CREDENTIALS: {
         INCLUDE: {withCredentials: true}
     }

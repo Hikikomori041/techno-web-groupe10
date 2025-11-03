@@ -1,0 +1,55 @@
+"use client";
+
+import {useRouter} from "next/navigation";
+import {toast} from "sonner";
+import {ReactNode} from "react";
+import {authService} from "@/lib/api/services/auth.service";
+import {Header} from "@/app/_ui/commun/header";
+import {Footer} from "@/app/_ui/commun/footer";
+import {useEffect, useState} from "react";
+import type {User as UserType} from "@/lib/api/definitions";
+import {Sidenav} from "@/app/_ui/profile/sidenav";
+
+export default function ProfileLayout({children}: { children: ReactNode }) {
+    const router = useRouter();
+
+    const [user, setUser] = useState<UserType | null>(null);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const userData = await authService.profile();
+                setUser(userData);
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+            }
+        }
+
+        fetchUser();
+    }, []);
+
+    const logout = async () => {
+        toast.info("Logged out");
+        await authService.logout();
+        router.push("/login");
+    };
+
+    return (
+        <div className="min-h-screen bg-muted/30">
+            <Header/>
+            <div className="container mx-auto px-4 py-8 lg:px-8">
+                <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+                    {/* Sidebar */}
+                    <aside className="space-y-4">
+                        <Sidenav user={user} logout={logout}/>
+                    </aside>
+
+                    {/* Main Content */}
+                    <div>{children}</div>
+                </div>
+            </div>
+
+            <Footer/>
+        </div>
+    );
+}

@@ -6,26 +6,29 @@ import {User} from '@/lib/api/definitions';
 export const usersService = {
     // Get all users (Admin only)
     getAllUsers: async (): Promise<User[]> => {
-        return apiClient.get<User[]>(ENDPOINTS.USERS.ALL, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.get(ENDPOINTS.USERS.ALL, ENDPOINTS.CREDENTIALS.INCLUDE);
+        return res.data;
     },
 
     // Get user by ID (Admin only)
     getUserById: async (userId: string): Promise<User> => {
-        return apiClient.get<User>(ENDPOINTS.USERS.ONE(userId), ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.get(ENDPOINTS.USERS.ONE(userId), ENDPOINTS.CREDENTIALS.INCLUDE);
+        return res.data;
     },
 
     // Update user roles (Admin only)
     updateUserRole: async (userId: string, roles: string[]): Promise<User> => {
-        return apiClient.put<User>(
+        const res = await apiClient.put(
             ENDPOINTS.USERS.UPDATE_ROLE(userId),
             {roles},
             ENDPOINTS.CREDENTIALS.INCLUDE
         );
+        return res.data;
     },
 
     // Delete user (Admin only)
     deleteUser: async (userId: string): Promise<void> => {
-        return apiClient.delete<void>(
+        const res = await apiClient.delete(
             ENDPOINTS.USERS.DELETE(userId),
             ENDPOINTS.CREDENTIALS.INCLUDE
         );

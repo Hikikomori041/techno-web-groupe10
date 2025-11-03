@@ -4,6 +4,7 @@ import {DashboardStats} from '@/lib/api/definitions';
 
 export const statsService = {
     getDashboardStats: async (): Promise<DashboardStats> => {
-        return apiClient.get<DashboardStats>(ENDPOINTS.STATS.DASHBOARD, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.get<DashboardStats>(ENDPOINTS.STATS.DASHBOARD, ENDPOINTS.CREDENTIALS.INCLUDE);
+        return res.data;
     }
 }
