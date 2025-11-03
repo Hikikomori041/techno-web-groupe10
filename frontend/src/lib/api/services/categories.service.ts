@@ -6,22 +6,22 @@ import {Category, CreateCategoryData, UpdateCategoryData} from '@/lib/api/defini
 export const categoriesService = {
     // Fetch all categories
     getAllCategories: async (): Promise<Category[]> => {
-        const res = await apiClient.get<Category[]>(ENDPOINTS.CATEGORIES.ALL);
+        const res = await apiClient.get(ENDPOINTS.CATEGORIES.ALL);
         return res.data;
     },
 
     getCategory: async (id: string): Promise<Category> => {
-        const res = await apiClient.get<Category>(ENDPOINTS.CATEGORIES.ONE(id));
+        const res = await apiClient.get(ENDPOINTS.CATEGORIES.ONE(id));
         return res.data;
     },
 
     createCategory: async (data: CreateCategoryData): Promise<Category> => {
-        const res = await apiClient.post<Category>(ENDPOINTS.CATEGORIES.CREATE, data, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.post(ENDPOINTS.CATEGORIES.CREATE, data, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },
 
     updateCategory: async (id: string, data: UpdateCategoryData): Promise<Category> => {
-        const res = await apiClient.put<Category>(ENDPOINTS.CATEGORIES.UPDATE(id), data, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.put(ENDPOINTS.CATEGORIES.UPDATE(id), data, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },
 

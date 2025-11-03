@@ -5,8 +5,8 @@ import {Card, CardContent} from "@/components/ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 import {Badge} from "@/components/ui/badge"
 import {Separator} from "@/components/ui/separator"
-import {Header} from "@/app/_ui/header";
-import {Footer} from "@/app/_ui/footer";
+import {Header} from "@/app/_ui/commun/header";
+import {Footer} from "@/app/_ui/commun/footer";
 import {productsService} from "@/lib/api/services/products.service";
 import {categoriesService} from "@/lib/api/services/categories.service";
 import {Product} from "@/lib/api/definitions";

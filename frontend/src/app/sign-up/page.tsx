@@ -9,6 +9,7 @@ import {useRouter} from "next/navigation";
 import {useState} from "react";
 import {authService} from '@/lib/api/services/auth.service';
 import {RegisterCredentials} from '@/lib/api/definitions';
+import {toast} from "sonner";
 
 
 export default function SignUpPage() {
@@ -42,12 +43,23 @@ export default function SignUpPage() {
                 firstName: formData.firstName,
                 lastName: formData.lastName
             }
-            console.log(registerCredentials);
+
             const response = await authService.register(registerCredentials)
 
-            // Redirect to dashboard
-            const userDataEncoded = encodeURIComponent(JSON.stringify(response));
-            router.push(`/dashboard?user=${userDataEncoded}`);
+            if (response.status === 200) {
+                setFormData({
+                    email: '',
+                    password: '',
+                    firstName: '',
+                    lastName: '',
+                    confirmPassword: ''
+                })
+                router.push('/products');
+            } else{
+                toast.error(response.message)
+            }
+
+
         } catch (err: any) {
             console.log(err.message || 'Registration failed. Please try again.');
         }

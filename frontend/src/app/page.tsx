@@ -1,8 +1,8 @@
 import {HeroSection} from "@/app/_ui/home/hero-section"
 import {CategoryGrid} from "@/app/_ui/home/category-grid"
 import {FeaturedProducts} from "@/app/_ui/home/featured-products"
-import {Footer} from "@/app/_ui/footer"
-import {Header} from "@/app/_ui/header";
+import {Footer} from "@/app/_ui/commun/footer"
+import {Header} from "@/app/_ui/commun/header";
 
 export default function Home() {
     return (

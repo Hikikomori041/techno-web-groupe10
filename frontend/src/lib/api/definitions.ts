@@ -27,17 +27,6 @@ export interface User {
     updatedAt: string;
 }
 
-export interface ApiError {
-    message: string;
-    statusCode?: number;
-}
-
-export interface CategoryRef {
-    _id: string;
-    name: string;
-    description?: string;
-}
-
 export interface Product {
     _id: string;
     nom: string;
@@ -102,7 +91,7 @@ export interface CartItem {
         prix: number;
         description?: string;
         images?: string[];
-        id_categorie: number;
+        id_categorie: string;
     };
     quantity: number;
     subtotal: number;

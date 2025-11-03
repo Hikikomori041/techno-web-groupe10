@@ -1,10 +1,10 @@
 "use client";
 
 import {useEffect, useState, useRef, useCallback} from "react";
-import {Footer} from "@/app/_ui/footer"
+import {Footer} from "@/app/_ui/commun/footer"
 import {ProductGrid} from "@/app/_ui/products/product-grid"
 import {FilterPanel} from "@/app/_ui/products/product-filter"
-import {Header} from "@/app/_ui/header";
+import {Header} from "@/app/_ui/commun/header";
 import {productsService} from "@/lib/api/services/products.service";
 import {Product, ProductFilters} from "@/lib/api/definitions";
 

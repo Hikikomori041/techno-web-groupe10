@@ -1,25 +1,52 @@
 import {Card, CardContent, CardFooter} from "@/components/ui/card";
 import {ShoppingCart, Info} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {Product} from "@/lib/api/definitions";
+import {CartItem, Product} from "@/lib/api/definitions";
 import {useRouter} from "next/navigation";
 import {categoriesService} from "@/lib/api/services/categories.service";
 import {useEffect, useState} from "react";
+import {useCart} from "@/context/cart.context";
 
 export default function ProductCard({product}: { product: Product }) {
     const router = useRouter();
     const {_id} = product;
-    const [category, setCategory] = useState(null);
+    const [category, setCategory] = useState("");
+
+    const {addItemToCart} = useCart();
+
+    const handleAddToCart = () => {
+        let cartItem: CartItem = {
+            _id: "",
+            productId: product,
+            quantity: 1,
+            subtotal: product.prix,
+            addedAt: new Date().toISOString()
+        }
+        addItemToCart(cartItem);
+    }
+
+
     const navigateToProduct = () => {
         router.push(`/products/${_id}`);
     }
     useEffect(() => {
-        categoriesService.getCategory(product.id_categorie).then(cat => {
-            setCategory(cat.name);
-        });
+        const fetchCategory = async () => {
+            if (product.id_categorie) {
+                try {
+                    const categoryData = await categoriesService.getCategory(product.id_categorie);
+                    setCategory(categoryData.name);
+                } catch (error) {
+                    console.error("Failed to fetch category:", error);
+                }
+            }
+        };
+
+        fetchCategory();
+
     }, [_id]);
+
     return (
-        <Card key={product._id} className="overflow-hidden group hover:shadow-lg transition-shadow">
+        <Card className="overflow-hidden group hover:shadow-lg transition-shadow">
             <div className="aspect-square bg-card overflow-hidden">
                 <img
                     src={"/placeholder.svg"}
@@ -47,7 +74,9 @@ export default function ProductCard({product}: { product: Product }) {
                     Détails
                 </Button>
                 <Button className="w-full bg-primary hover:bg-primary/90 text-accent-foreground"
-                        style={{cursor: "pointer"}} size="sm">
+                        style={{cursor: "pointer"}} size="sm"
+                        onClick={handleAddToCart}
+                >
                     <ShoppingCart className="h-4 w-4 mr-2"/>
                     Add to Cart
                 </Button>

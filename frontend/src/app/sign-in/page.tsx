@@ -9,6 +9,7 @@ import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {authService} from '@/lib/api/services/auth.service';
 import {LoginCredentials} from '@/lib/api/definitions';
+import {toast} from "sonner";
 
 export default function SignInPage() {
 
@@ -27,10 +28,9 @@ export default function SignInPage() {
         try {
             // Use auth service instead of direct fetch
             const response = await authService.login(formData);
+            toast.success("login successful");
 
-            // Redirect to dashboard with user data
-            const userDataEncoded = encodeURIComponent(JSON.stringify(response));
-            router.push(`/dashboard?user=${userDataEncoded}`);
+            router.push(`/products`);
         } catch (err: any) {
             console.log(err.message)
         } finally {
