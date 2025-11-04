@@ -391,7 +391,7 @@ export default function AdminOrdersPage() {
                                                     <MapPin className="h-4 w-4"/>
                                                     {order.shippingAddress.city}, {order.shippingAddress.country}
                                                 </div>
-                                                <Button onClick={() => router.push(`/profile/orders/${order._id}`)}>View
+                                                <Button onClick={() => router.push(`/dashboard/orders/${order._id}`)}>View
                                                     Details</Button>
                                             </div>
                                         </CardContent>
@@ -496,7 +496,7 @@ export default function AdminOrdersPage() {
                                                         <TableCell className="text-right">
                                                             <Button
                                                                 variant="link"
-                                                                onClick={() => router.push(`/profile/orders/${order._id}`)}
+                                                                onClick={() => router.push(`/dashboard/orders/${order._id}`)}
                                                                 className="text-primary"
                                                             >
                                                                 View

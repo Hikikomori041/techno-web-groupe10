@@ -47,7 +47,7 @@ export default function SignUpPage() {
 
             const response = await authService.register(registerCredentials)
 
-            if (response.status === 200) {
+            if (response.message === "User registered successfully") {
                 setFormData({
                     email: '',
                     password: '',
@@ -55,7 +55,9 @@ export default function SignUpPage() {
                     lastName: '',
                     confirmPassword: ''
                 })
+                toast.success("User registered successfully");
                 router.push('/products');
+
             } else {
                 toast.error(response.message)
             }

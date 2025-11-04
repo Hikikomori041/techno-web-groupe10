@@ -25,6 +25,14 @@ export function Header() {
     const {cartCount} = useCart();
     const router = useRouter();
 
+    const logout = async () => {
+        await authService.logout();
+        setIsAuthenticated(false);
+        setUser(null);
+        setIsAdmin(false);
+        router.push('/sign-in'); // Redirect to home or login page after logout
+    }
+
 
     useEffect(() => {
         const verifyAuth = async () => {
@@ -137,11 +145,7 @@ export function Header() {
                                             <DropdownMenuSeparator/>
                                             <DropdownMenuItem
                                                 className="text-red-600"
-                                                onClick={() => {
-                                                    // Optional: call logout function
-                                                    authService.logout();
-                                                    setIsAuthenticated(false);
-                                                }}
+                                                onClick={logout}
                                             >
                                                 <LogOut className="mr-2 h-4 w-4"/> Logout
                                             </DropdownMenuItem>

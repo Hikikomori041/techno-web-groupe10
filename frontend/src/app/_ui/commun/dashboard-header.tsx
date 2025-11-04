@@ -14,9 +14,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {authService} from "@/lib/api/services/auth.service";
-import {usePathname} from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 
 export function DashboardHeader() {
+    const router = useRouter()
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [user, setUser] = useState<{ name?: string; email?: string; avatarUrl?: string } | null>(null);
@@ -32,24 +33,41 @@ export function DashboardHeader() {
                     setIsAdmin(checkAdmin(response.user.roles))
                 } else {
                     setIsAuthenticated(false);
+                    setIsAdmin(false);
+                    setUser(null);
                 }
             } catch (err) {
                 console.error("Auth check failed:", err);
             }
         };
         verifyAuth();
-    }, []);
+    }, [isAuthenticated]);
 
     const checkAdmin = (roles: string[]) => {
         return roles.includes("admin");
     }
 
+    const logout = async () => {
+        await authService.logout();
+        setIsAuthenticated(false);
+        setUser(null)
+        setIsAdmin(false);
+        router.push('/sign-in');
+    }
+
     const navLinks = [
-        {href: "/dashboard/users", label: "Users"},
-        {href: "/dashboard/products", label: "Products"},
-        {href: "/dashboard/orders", label: "Orders"},
-        {href: "/products", label: "Shop Now"},
+        {href: "/dashboard/users", label: "Users", adminOnly: true},
+        {href: "/dashboard/products", label: "Products", adminOnly: false},
+        {href: "/dashboard/orders", label: "Orders", adminOnly: true},
+        {href: "/products", label: "Shop Now", adminOnly: false},
     ];
+
+    const visibleNavLinks = navLinks.filter(link => {
+        if (link.adminOnly && !isAdmin) {
+            return false;
+        }
+        return true;
+    })
 
     return (
         <header
@@ -65,7 +83,7 @@ export function DashboardHeader() {
                     <nav className="flex items-center gap-4">
                         {/* Navigation Links (Desktop Only) */}
                         <div className="hidden md:flex items-center gap-6 ml-8">
-                            {navLinks.map(({href, label}) => {
+                            {visibleNavLinks.map(({href, label}) => {
                                 const isActive = pathname === href;
                                 return (
                                     <Link
@@ -121,10 +139,7 @@ export function DashboardHeader() {
                                         <DropdownMenuSeparator/>
                                         <DropdownMenuItem
                                             className="text-red-600"
-                                            onClick={() => {
-                                                authService.logout();
-                                                setIsAuthenticated(false);
-                                            }}
+                                            onClick={logout}
                                         >
                                             <LogOut className="mr-2 h-4 w-4"/> Logout
                                         </DropdownMenuItem>

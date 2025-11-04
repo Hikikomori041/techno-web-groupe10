@@ -8,6 +8,7 @@ import {ordersService} from "@/lib/api/services/orders.service";
 import {useEffect, useState} from "react";
 import {Order, User} from "@/lib/api/definitions";
 import OrderCard from "@/app/_ui/orders/order-card";
+import {toast} from "sonner";
 
 export default function ProfilePage() {
 
@@ -15,26 +16,25 @@ export default function ProfilePage() {
     const [user, setUser] = useState<User | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const userData = await authService.isAuthenticated();
-                if (!userData.authenticated) {
-                    router.push("/login");
-                    return;
-                } else {
-                    if (userData.user){
-                        setUser(userData.user);
-                        const userOrders = await ordersService.getUserOrders();
-                        setOrders(userOrders);
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to fetch user data:", error);
-            }
-        }
+    const checkAuthAndFetchProfile = async () => {
+        try {
+            const result = await authService.isAuthenticated();
 
-        fetchUser();
+            if (!result.authenticated || !result.user) {
+                router.push('/sign-in');
+                return;
+            }
+
+            const res = await authService.profile();
+            setUser(res)
+        } catch (err) {
+            toast.error('Authentication failed');
+            router.push('/sign-in');
+        }
+    };
+
+    useEffect(() => {
+        checkAuthAndFetchProfile();
     }, []);
 
     return (

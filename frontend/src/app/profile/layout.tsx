@@ -15,17 +15,25 @@ export default function ProfileLayout({children}: { children: ReactNode }) {
 
     const [user, setUser] = useState<UserType | null>(null);
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const userData = await authService.profile();
-                setUser(userData);
-            } catch (error) {
-                console.error("Failed to fetch user data:", error);
-            }
-        }
+    const checkAuthAndFetchProfile = async () => {
+        try {
+            const result = await authService.isAuthenticated();
 
-        fetchUser();
+            if (!result.authenticated || !result.user) {
+                router.push('/sign-in');
+                return;
+            }
+
+            const res = await authService.profile();
+            setUser(res)
+        } catch (err) {
+            toast.error('Authentication failed');
+            router.push('/sign-in');
+        }
+    };
+
+    useEffect(() => {
+        checkAuthAndFetchProfile()
     }, []);
 
     const logout = async () => {
