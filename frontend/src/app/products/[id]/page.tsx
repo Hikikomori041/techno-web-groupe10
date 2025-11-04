@@ -11,6 +11,8 @@ import {productsService} from "@/lib/api/services/products.service";
 import {categoriesService} from "@/lib/api/services/categories.service";
 import {Product} from "@/lib/api/definitions";
 import Link from "next/link";
+import {useCart} from "@/context/cart.context";
+import {useState} from "react";
 
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
@@ -27,6 +29,19 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
     } catch (error) {
         console.error("Error fetching product:", error);
+    }
+
+    const { addItemToCart } = useCart()
+    const [isAdding, setIsAdding] = useState(false)
+
+    const handleAddToCart = async () => {
+        setIsAdding(true)
+        try {
+            const id = product?._id || "";
+            await addItemToCart(id, 1)
+        } finally {
+            setIsAdding(false)
+        }
     }
 
     if (!product) {
@@ -108,6 +123,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                         <div className="space-y-4">
                             <div className="flex gap-3">
                                 <Button size="lg"
+                                        onClick={handleAddToCart}
                                         className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                                     <ShoppingCart className="h-5 w-5 mr-2"/>
                                     Add to Cart

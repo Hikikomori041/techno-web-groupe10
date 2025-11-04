@@ -12,17 +12,17 @@ export default function ProductCard({product}: { product: Product }) {
     const {_id} = product;
     const [category, setCategory] = useState("");
 
-    const {addItemToCart} = useCart();
 
-    const handleAddToCart = () => {
-        let cartItem: CartItem = {
-            _id: "",
-            productId: product,
-            quantity: 1,
-            subtotal: product.prix,
-            addedAt: new Date().toISOString()
+    const { addItemToCart } = useCart()
+    const [isAdding, setIsAdding] = useState(false)
+
+    const handleAddToCart = async () => {
+        setIsAdding(true)
+        try {
+            await addItemToCart(product._id, 1)
+        } finally {
+            setIsAdding(false)
         }
-        addItemToCart(cartItem);
     }
 
 

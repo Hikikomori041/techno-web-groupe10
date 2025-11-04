@@ -1,86 +1,139 @@
-import {Button} from "@/components/ui/button";
-import Image from "next/image";
-import {Minus, Plus, Trash2} from "lucide-react";
-import {CartItem} from "@/lib/api/definitions";
-import {categoriesService} from "@/lib/api/services/categories.service";
-import {useState, useEffect} from "react";
-import { useCart } from "@/context/cart.context";
+"use client"
 
+import { useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { Minus, Plus, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import type { CartItem } from "@/lib/api/definitions"
+import { useCart } from "@/context/cart.context"
 
-export default function ItemCart({item}: { item: CartItem }) {
-    const {productId, quantity, subtotal} = item;
-    const {nom, images} = productId;
-    const [category, setCategory] = useState("");
-    const { addItemToCart, removeItemFromCart, clearCartItem } = useCart();
+interface ItemCartProps {
+    item: CartItem
+}
 
-    useEffect(() => {
-        const fetchCategory = async () => {
-            if (productId.id_categorie) {
-                try {
-                    const categoryData = await categoriesService.getCategory(productId.id_categorie);
-                    setCategory(categoryData.name);
-                } catch (error) {
-                    console.error("Failed to fetch category:", error);
-                }
-            }
-        };
+export default function ItemCart({ item }: ItemCartProps) {
+    const { updateItemQuantity, removeItemFromCart } = useCart()
+    const [isUpdating, setIsUpdating] = useState(false)
+    const [isRemoving, setIsRemoving] = useState(false)
 
-        fetchCategory();
+    const handleIncrement = async () => {
+        setIsUpdating(true)
+        try {
+            await updateItemQuantity(item.productId._id, item.quantity + 1)
+        } finally {
+            setIsUpdating(false)
+        }
+    }
 
-    }, [productId]);
+    const handleDecrement = async () => {
+        if (item.quantity <= 1) return
+
+        setIsUpdating(true)
+        try {
+            await updateItemQuantity(item.productId._id, item.quantity - 1)
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
+    const handleQuantityChange = async (value: string) => {
+        const newQuantity = parseInt(value)
+
+        if (isNaN(newQuantity) || newQuantity < 1) return
+
+        setIsUpdating(true)
+        try {
+            await updateItemQuantity(item.productId._id, newQuantity)
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
+    const handleRemove = async () => {
+        setIsRemoving(true)
+        try {
+            await removeItemFromCart(item.productId._id)
+        } finally {
+            setIsRemoving(false)
+        }
+    }
 
     return (
-        <div>
-            <div className="flex gap-4">
-                <div
-                    className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg border bg-muted">
-                    <Image src={"/macbook-pro-laptop.jpeg"} alt={nom} fill
-                           className="object-cover"/>
+        <div className="flex gap-4 py-4">
+            {/*</Link>*/}
+
+            {/* Product Details */}
+            <div className="flex flex-1 flex-col justify-between">
+                <div className="space-y-1">
+                    <Link
+                        href={`/products/${item.productId._id}`}
+                        className="font-medium hover:underline line-clamp-2"
+                    >
+                        {item.productId.nom}
+                    </Link>
+                    {item.productId.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                            {item.productId.description}
+                        </p>
+                    )}
+                    <p className="text-lg font-semibold text-primary">
+                        ${item.productId.prix.toFixed(2)}
+                    </p>
                 </div>
-                <div className="flex flex-1 flex-col justify-between">
-                    <div>
-                        <div className="flex justify-between">
-                            <div>
-                                <h3 className="font-semibold">{nom}</h3>
-                                <p className="text-sm text-muted-foreground">{category}</p>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => clearCartItem(item)}
-                                className="text-destructive hover:text-destructive"
-                            >
-                                <Trash2 className="h-4 w-4"/>
-                                <span className="sr-only">Remove item</span>
-                            </Button>
-                        </div>
+
+                {/* Quantity Controls */}
+                <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center border rounded-lg">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-r-none"
+                            onClick={handleDecrement}
+                            disabled={isUpdating || item.quantity <= 1}
+                        >
+                            <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleQuantityChange(e.target.value)}
+                            disabled={isUpdating}
+                            className="h-8 w-12 border-0 border-x text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-l-none"
+                            onClick={handleIncrement}
+                            disabled={isUpdating}
+                        >
+                            <Plus className="h-3 w-3" />
+                        </Button>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 bg-transparent"
-                                onClick={() => removeItemFromCart(item)}
-                            >
-                                <Minus className="h-3 w-3"/>
-                                <span className="sr-only">Decrease quantity</span>
-                            </Button>
-                            <span
-                                className="w-12 text-center font-medium">{quantity}</span>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 bg-transparent"
-                                onClick={() => addItemToCart(item)}
-                            >
-                                <Plus className="h-3 w-3"/>
-                                <span className="sr-only">Increase quantity</span>
-                            </Button>
-                        </div>
-                        <p className="font-bold">${(subtotal).toFixed(2)}</p>
-                    </div>
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={handleRemove}
+                        disabled={isRemoving}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
+            </div>
+
+            {/* Subtotal */}
+            <div className="flex flex-col items-end justify-between">
+                <p className="text-lg font-semibold">
+                    ${item.subtotal.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    {item.quantity} × ${item.productId.prix.toFixed(2)}
+                </p>
             </div>
         </div>
     )
