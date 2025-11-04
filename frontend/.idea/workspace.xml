@@ -6,15 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="06cf50c5-3721-4db3-9ca4-86c203dfbe27" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/middleware.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/_ui/commun/header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/_ui/commun/header.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/orders/[id]/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/orders/page.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/profile/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/profile/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/endpoints.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/endpoints.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/services/auth.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/auth.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/services/orders.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/orders.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/services/stats.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/stats.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/api/services/users.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/services/users.service.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,8 +18,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="TypeScript File" />
         <option value="TypeScript JSX File" />
+        <option value="TypeScript File" />
       </list>
     </option>
   </component>
@@ -141,7 +135,7 @@
       <workItem from="1761755897211" duration="3490000" />
       <workItem from="1761996551995" duration="23295000" />
       <workItem from="1762093780607" duration="629000" />
-      <workItem from="1762094458942" duration="36770000" />
+      <workItem from="1762094458942" duration="50144000" />
     </task>
     <servers />
   </component>

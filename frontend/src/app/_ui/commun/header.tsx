@@ -21,6 +21,7 @@ import {useRouter} from "next/navigation";
 export function Header() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<{ name?: string; email?: string; avatarUrl?: string } | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const {cartCount} = useCart();
     const router = useRouter();
 
@@ -32,6 +33,9 @@ export function Header() {
                 if (response.user) {
                     setIsAuthenticated(true);
                     setUser(response.user);
+                    if (response.user.roles.includes("admin")) {
+                        setIsAdmin(true);
+                    }
                 } else {
                     setIsAuthenticated(false);
                 }
@@ -62,6 +66,15 @@ export function Header() {
                             >
                                 Products
                             </Link>
+                            {isAuthenticated && isAdmin && (
+                                <Link
+                                    href="/dashboard"
+                                    className="text-sm font-medium hover:text-accent transition-colors"
+                                >
+                                    Dashboard
+                                </Link>
+                            )}
+
                         </div>
 
                         {/* Action Buttons */}
@@ -143,69 +156,3 @@ export function Header() {
         </header>
     );
 }
-
-
-/*
-import Link from "next/link"
-import { ShoppingCart, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-
-export function Header() {
-    return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container mx-auto px-4 lg:px-8">
-                <div className="flex h-16 items-center justify-between">
-
-                    {/!* ---------- Logo ---------- *!/}
-                    <Link href="/" className="flex items-center space-x-2">
-                        <img src={"/favicon.ico"} height={"80px"} width={"80px"}/>
-                    </Link>
-
-                    {/!* ---------- Navigation + Actions ---------- *!/}
-                    <nav className="flex items-center gap-4">
-
-                        {/!* Navigation Links (Desktop Only) *!/}
-                        <div className="hidden md:flex items-center gap-6 ml-8">
-                            <Link
-                                href="/products"
-                                className="text-sm font-medium hover:text-accent transition-colors"
-                            >
-                                Products
-                            </Link>
-                        </div>
-
-                        {/!* Action Buttons *!/}
-                        <div className="flex items-center gap-2">
-                            {/!* Cart *!/}
-                            <Button variant="ghost" size="icon" className="relative">
-                                <ShoppingCart className="h-5 w-5" />
-                                <span className="sr-only">Shopping cart</span>
-                                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center">
-                  0
-                </span>
-                            </Button>
-
-                            {/!* Menu (Mobile) *!/}
-                            <Button variant="ghost" size="icon" className="md:hidden">
-                                <Menu className="h-5 w-5" />
-                                <span className="sr-only">Menu</span>
-                            </Button>
-
-                            {/!* Auth Buttons (Desktop Only) *!/}
-                            <div className="hidden md:flex items-center gap-2">
-                                <Button variant="ghost" asChild>
-                                    <Link href="/sign-in">Sign In</Link>
-                                </Button>
-                                <Button asChild>
-                                    <Link href="/sign-up">Sign Up</Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </nav>
-
-                </div>
-            </div>
-        </header>
-    )
-}
-*/

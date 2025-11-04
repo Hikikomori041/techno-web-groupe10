@@ -4,12 +4,12 @@ import Link from "next/link"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
-import {Checkbox} from "@/components/ui/checkbox"
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {authService} from '@/lib/api/services/auth.service';
 import {LoginCredentials} from '@/lib/api/definitions';
 import {toast} from "sonner";
+import {House} from "lucide-react";
 
 export default function SignInPage() {
 
@@ -47,6 +47,11 @@ export default function SignInPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
+            <Button size={"icon"} className={"fixed top-4 left-4"}>
+                <Link href="/" className={"w-full flex items-center justify-center"}>
+                    <House/>
+                </Link>
+            </Button>
             <div className="w-full max-w-md">
                 <div className="bg-background rounded-lg border shadow-sm p-8">
                     {/* Logo */}
@@ -81,9 +86,6 @@ export default function SignInPage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="password">Password</Label>
-                                <Link href="/forgot-password" className="text-sm text-accent hover:underline">
-                                    Forgot password?
-                                </Link>
                             </div>
                             <Input id="password"
                                    type="password"
@@ -92,16 +94,6 @@ export default function SignInPage() {
                                    value={formData.password}
                                    onChange={handleChange}
                                    required/>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="remember"/>
-                            <label
-                                htmlFor="remember"
-                                className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                                Remember me
-                            </label>
                         </div>
 
                         <Button

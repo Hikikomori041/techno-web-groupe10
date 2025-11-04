@@ -10,6 +10,7 @@ import {useState} from "react";
 import {authService} from '@/lib/api/services/auth.service';
 import {RegisterCredentials} from '@/lib/api/definitions';
 import {toast} from "sonner";
+import {House} from "lucide-react";
 
 
 export default function SignUpPage() {
@@ -55,7 +56,7 @@ export default function SignUpPage() {
                     confirmPassword: ''
                 })
                 router.push('/products');
-            } else{
+            } else {
                 toast.error(response.message)
             }
 
@@ -75,6 +76,11 @@ export default function SignUpPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
+            <Button size={"icon"} className={"fixed top-4 left-4"}>
+                <Link href="/" className={"w-full flex items-center justify-center"}>
+                    <House/>
+                </Link>
+            </Button>
             <div className="w-full max-w-md">
                 <div className="bg-background rounded-lg border shadow-sm p-8">
                     {/* Logo */}

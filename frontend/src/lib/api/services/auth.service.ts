@@ -1,6 +1,7 @@
 import {apiClient} from '@/lib/api/clients';
 import {ENDPOINTS} from '@/lib/api/endpoints';
 import {LoginCredentials, RegisterCredentials, AuthCheckResponse, User} from '@/lib/api/definitions';
+import {toast} from "sonner";
 
 export const authService = {
     // Email/Password Login
@@ -34,7 +35,7 @@ export const authService = {
         try {
             await apiClient.post(ENDPOINTS.AUTH.LOGOUT, {}, ENDPOINTS.CREDENTIALS.INCLUDE);
         } finally {
-            alert("Logged out successfully.");
+            toast.success("Logged out successfully.");
         }
     },
 
