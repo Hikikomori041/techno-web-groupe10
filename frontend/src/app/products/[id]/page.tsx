@@ -1,4 +1,6 @@
-import {notFound} from "next/navigation"
+"use client"
+;
+import {notFound, useParams} from "next/navigation"
 import {ShoppingCart, Truck, Shield, RotateCcw} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card"
@@ -12,26 +14,36 @@ import {categoriesService} from "@/lib/api/services/categories.service";
 import {Product} from "@/lib/api/definitions";
 import Link from "next/link";
 import {useCart} from "@/context/cart.context";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-    const {id} = await props.params;
-    let product: Product | null = null;
-    let category: string | null = null;
-    try {
-        // Fetch product by ID from backend
-        product = await productsService.getProductById(id);
-        let categoryId = product.id_categorie
-        await categoriesService.getCategory(categoryId).then((categories) => {
-            category = categories.name
-        });
+export default function Page() {
+    const params = useParams()
+    const id = params.id as string
+    const [product, setProduct] = useState<Product | null>(null);
+    const [category, setCategory] = useState<string | null>(null);
 
-    } catch (error) {
-        console.error("Error fetching product:", error);
+    const fetchDetail = async () => {
+        try {
+            const productData = await productsService.getProductById(id);
+            if (!productData) {
+                notFound();
+            }
+            setProduct(productData)
+
+            const categoryId = productData.id_categorie;
+            const categoryData = await categoriesService.getCategory(categoryId);
+            setCategory(categoryData.name);
+        } catch (error) {
+            console.error("Error fetching product:", error);
+        }
     }
 
-    const { addItemToCart } = useCart()
+    useEffect(() => {
+        fetchDetail()
+    }, []);
+
+    const {addItemToCart} = useCart()
     const [isAdding, setIsAdding] = useState(false)
 
     const handleAddToCart = async () => {
@@ -44,10 +56,6 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         }
     }
 
-    if (!product) {
-        notFound();
-    }
-
     return (
         <div className="min-h-screen bg-background">
             <Header/>
@@ -58,16 +66,16 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                     <span className="mx-2">/</span>
                     <Link href={"/products"} className="hover:text-foreground cursor-pointer">Products</Link>
                     <span className="mx-2">/</span>
-                    <span className="text-foreground">{product.nom}</span>
+                    <span className="text-foreground">{product?.nom}</span>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-8 mb-12">
                     {/* Product Images */}
                     <div className="space-y-4">
-                        {product.images && product.images.length > 0 ? (
+                        {product?.images && product?.images.length > 0 ? (
                             <img
-                                src={product.images[0]}
-                                alt={product.nom}
+                                src={product?.images[0]}
+                                alt={product?.nom}
                                 className="w-full h-full object-cover"
                             />
                         ) : (
@@ -86,12 +94,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                             </svg>
                         )}
                         <div className="grid grid-cols-4 gap-4">
-                            {product.images && product.images.length > 1 && (
+                            {product?.images && product?.images.length > 1 && (
                                 <div className="p-4 grid grid-cols-4 gap-2">
-                                    {product.images.slice(1, 5).map((image, index) => (
+                                    {product?.images.slice(1, 5).map((image, index) => (
                                         <div key={index}
                                              className="aspect-square bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
-                                            <img src={image} alt={`${product.nom} ${index + 2}`}
+                                            <img src={image} alt={`${product?.nom} ${index + 2}`}
                                                  className="w-full h-full object-cover"/>
                                         </div>
                                     ))}
@@ -106,15 +114,15 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                             <div className="flex items-center gap-2 mb-2">
                                 <Badge variant="secondary">{category}</Badge>
                             </div>
-                            <h1 className="text-3xl font-bold mb-2 text-balance">{product.nom}</h1>
+                            <h1 className="text-3xl font-bold mb-2 text-balance">{product?.nom}</h1>
 
 
                             {/* Price */}
                             <div className="flex items-baseline gap-3 mb-6">
-                                <span className="text-4xl font-bold text-primary">${product.prix}</span>
+                                <span className="text-4xl font-bold text-primary">${product?.prix}</span>
                             </div>
 
-                            <p className="text-muted-foreground mb-6 leading-relaxed">{product.description}</p>
+                            <p className="text-muted-foreground mb-6 leading-relaxed">{product?.description}</p>
                         </div>
 
                         <Separator/>
@@ -171,9 +179,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                                 <h3 className="text-xl font-semibold mb-4">
                                 </h3>
                                 <div className="space-y-3">
-                                    {product.specifications?.length ? (
-                                        product.specifications.map((spec) => (
-                                            <div key={spec._id} className="flex py-3 border-b last:border-0">
+                                    {product?.specifications?.length ? (
+                                        product?.specifications.map((spec) => (
+                                            <div key={spec.key} className="flex py-3 border-b last:border-0">
                                                 <span className="font-medium w-1/3">{spec.key}</span>
                                                 <span className="text-muted-foreground w-2/3">
                                                     {spec.value}

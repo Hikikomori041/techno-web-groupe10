@@ -9,7 +9,7 @@ import {useCart} from "@/context/cart.context";
 
 export default function ProductCard({product}: { product: Product }) {
     const router = useRouter();
-    const {_id} = product;
+    const {_id, nom, prix} = product;
     const [category, setCategory] = useState("");
 
 
@@ -29,6 +29,7 @@ export default function ProductCard({product}: { product: Product }) {
     const navigateToProduct = () => {
         router.push(`/products/${_id}`);
     }
+
     useEffect(() => {
         const fetchCategory = async () => {
             if (product.id_categorie) {
@@ -50,7 +51,7 @@ export default function ProductCard({product}: { product: Product }) {
             <div className="aspect-square bg-card overflow-hidden">
                 <img
                     src={"/placeholder.svg"}
-                    alt={product.nom}
+                    alt={nom}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
             </div>
@@ -58,12 +59,12 @@ export default function ProductCard({product}: { product: Product }) {
                 <div>
                     <p className="text-xs text-muted-foreground mb-1">{category ?? "Category"}</p>
                     <h3 className="font-semibold text-base mb-2 line-clamp-2 min-h-[3rem] leading-tight">
-                        {product.nom}
+                        {nom}
                     </h3>
                 </div>
 
                 <div className="mt-auto">
-                    <p className="text-xl font-bold text-accent">${product.prix}</p>
+                    <p className="text-xl font-bold text-accent">${prix}</p>
                 </div>
             </CardContent>
             <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
