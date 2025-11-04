@@ -1,6 +1,6 @@
 "use client"
 
-import {useState, useCallback} from "react"
+import {useState, useCallback, useEffect} from "react"
 import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
@@ -8,7 +8,9 @@ import {Label} from "@/components/ui/label"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Slider} from "@/components/ui/slider"
 import {X} from "lucide-react"
-import {ProductFilters} from "@/lib/api/definitions";
+import {Category, ProductFilters} from "@/lib/api/definitions";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {categoriesService} from "@/lib/api/services/categories.service";
 
 interface FilterPanelProps {
     onChange: (filters: ProductFilters) => void
@@ -16,6 +18,7 @@ interface FilterPanelProps {
 }
 
 export function FilterPanel({onChange, onClear}: FilterPanelProps) {
+    const [categories, setCategories] = useState<Category[] | null>([]);
     const [filters, setFilters] = useState<ProductFilters>({
         categoryId: "",
         search: "",
@@ -24,6 +27,19 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
         inStockOnly: false,
         specifications: {},
     })
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await categoriesService.getAllCategories();
+                setCategories(res)
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        }
+
+        fetchCategories()
+    }, []);
 
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
     const [specs, setSpecs] = useState<{ key: string; value: string }[]>([])
@@ -47,6 +63,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
     }
 
     const addSpec = () => setSpecs([...specs, {key: "", value: ""}])
+
     const removeSpec = (i: number) => {
         const newSpecs = specs.filter((_, idx) => idx !== i)
         setSpecs(newSpecs)
@@ -76,16 +93,22 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
             <CardContent className="space-y-6">
                 {/* Category ID */}
                 <div className="space-y-2">
-                    <Label htmlFor="categoryId" className="font-semibold">
-                        Category ID
-                    </Label>
-                    <Input
-                        id="categoryId"
-                        placeholder="e.g., 507f1f77bcf86cd799439011"
+                    <Label htmlFor="id_categorie">Category</Label>
+                    <Select
                         value={filters.categoryId}
-                        onChange={(e) => updateFilter("categoryId", e.target.value)}
-                        className="w-full"
-                    />
+                        onValueChange={(value) => setFilters({ ...filters, categoryId: value })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {categories?.map((cat) => (
+                                <SelectItem key={cat._id} value={cat._id}>
+                                    {cat.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Search */}
