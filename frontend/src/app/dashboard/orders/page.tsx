@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import {useEffect, useState} from "react"
+import {useRouter} from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {Card, CardContent} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {
     Clock,
     Package,
@@ -20,138 +20,33 @@ import {
     TableIcon,
     MapPin,
 } from "lucide-react"
-import { checkAuth, type User } from "@/lib/auth"
-import type { Order } from "@/lib/api/definitions"
+import {User} from "@/lib/api/definitions"
+import {authService} from "@/lib/api/services/auth.service";
+import type {Order} from "@/lib/api/definitions"
+import {ordersService} from "@/lib/api/services/orders.service";
 
-// Mock orders API - replace with actual API in production
-const ordersApi = {
-    async getAllOrders(): Promise<Order[]> {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        return [
-            {
-                _id: "1",
-                orderNumber: "ORD-2024-001",
-                userId: {
-                    _id: "user1",
-                    firstName: "John",
-                    lastName: "Doe",
-                    email: "john.doe@example.com",
-                },
-                createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                status: "pending",
-                paymentStatus: "pending",
-                items: [
-                    { productId: "1", quantity: 1, price: 1299.99 },
-                    { productId: "2", quantity: 2, price: 899.99 },
-                ],
-                total: 3099.97,
-                shippingAddress: {
-                    street: "123 Main St",
-                    city: "New York",
-                    postalCode: "10001",
-                    country: "USA",
-                },
-            },
-            {
-                _id: "2",
-                orderNumber: "ORD-2024-002",
-                userId: {
-                    _id: "user2",
-                    firstName: "Jane",
-                    lastName: "Smith",
-                    email: "jane.smith@example.com",
-                },
-                createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                status: "preparation",
-                paymentStatus: "paid",
-                items: [{ productId: "3", quantity: 1, price: 399.99 }],
-                total: 399.99,
-                shippingAddress: {
-                    street: "456 Oak Ave",
-                    city: "Los Angeles",
-                    postalCode: "90001",
-                    country: "USA",
-                },
-            },
-            {
-                _id: "3",
-                orderNumber: "ORD-2024-003",
-                userId: {
-                    _id: "user3",
-                    firstName: "Bob",
-                    lastName: "Johnson",
-                    email: "bob.johnson@example.com",
-                },
-                createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-                status: "shipped",
-                paymentStatus: "paid",
-                items: [{ productId: "4", quantity: 1, price: 549.99 }],
-                total: 549.99,
-                shippingAddress: {
-                    street: "789 Pine Rd",
-                    city: "Chicago",
-                    postalCode: "60601",
-                    country: "USA",
-                },
-            },
-            {
-                _id: "4",
-                orderNumber: "ORD-2024-004",
-                userId: {
-                    _id: "user4",
-                    firstName: "Alice",
-                    lastName: "Williams",
-                    email: "alice.williams@example.com",
-                },
-                createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-                status: "delivered",
-                paymentStatus: "paid",
-                items: [{ productId: "5", quantity: 2, price: 899.99 }],
-                total: 1799.98,
-                shippingAddress: {
-                    street: "321 Elm St",
-                    city: "Miami",
-                    postalCode: "33101",
-                    country: "USA",
-                },
-            },
-        ]
-    },
-
-    async updateOrderStatus(orderId: string, newStatus: string): Promise<void> {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        console.log(`[v0] Updated order ${orderId} status to ${newStatus}`)
-    },
-
-    async updatePaymentStatus(orderId: string, newPaymentStatus: string): Promise<void> {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        console.log(`[v0] Updated order ${orderId} payment status to ${newPaymentStatus}`)
-    },
-}
 
 const getStatusConfig = (status: string) => {
     const configs: Record<
         string,
         { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
     > = {
-        pending: { label: "Pending", variant: "secondary", icon: Clock },
-        preparation: { label: "In Preparation", variant: "default", icon: Package },
-        payment_confirmed: { label: "Payment Confirmed", variant: "default", icon: CreditCard },
-        shipped: { label: "Shipped", variant: "default", icon: Truck },
-        delivered: { label: "Delivered", variant: "default", icon: CheckCircle },
-        cancelled: { label: "Cancelled", variant: "destructive", icon: XCircle },
+        pending: {label: "Pending", variant: "secondary", icon: Clock},
+        preparation: {label: "In Preparation", variant: "default", icon: Package},
+        payment_confirmed: {label: "Payment Confirmed", variant: "default", icon: CreditCard},
+        shipped: {label: "Shipped", variant: "default", icon: Truck},
+        delivered: {label: "Delivered", variant: "default", icon: CheckCircle},
+        cancelled: {label: "Cancelled", variant: "destructive", icon: XCircle},
     }
     return configs[status] || configs.pending
 }
 
 const getPaymentConfig = (paymentStatus: string) => {
     const configs: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-        pending: { label: "Pending", variant: "secondary" },
-        paid: { label: "Paid", variant: "default" },
-        failed: { label: "Failed", variant: "destructive" },
-        refunded: { label: "Refunded", variant: "outline" },
+        pending: {label: "Pending", variant: "secondary"},
+        paid: {label: "Paid", variant: "default"},
+        failed: {label: "Failed", variant: "destructive"},
+        refunded: {label: "Refunded", variant: "outline"},
     }
     return configs[paymentStatus] || configs.pending
 }
@@ -172,7 +67,7 @@ export default function AdminOrdersPage() {
 
     const checkAuthAndFetchOrders = async () => {
         try {
-            const result = await checkAuth()
+            const result = await authService.isAuthenticated()
 
             if (!result.authenticated || !result.user) {
                 router.push("/sign-in")
@@ -196,7 +91,7 @@ export default function AdminOrdersPage() {
     const fetchOrders = async () => {
         try {
             setLoading(true)
-            const ordersData = await ordersApi.getAllOrders()
+            const ordersData = await ordersService.getAllOrders()
             setOrders(ordersData)
         } catch (err: any) {
             setError(err.message)
@@ -208,7 +103,7 @@ export default function AdminOrdersPage() {
     const handleUpdateStatus = async (orderId: string, newStatus: string) => {
         try {
             setUpdatingOrder(orderId)
-            await ordersApi.updateOrderStatus(orderId, newStatus)
+            await ordersService.updateOrderStatus(orderId, newStatus)
             await fetchOrders()
         } catch (err: any) {
             alert(err.message || "Failed to update status")
@@ -220,7 +115,7 @@ export default function AdminOrdersPage() {
     const handleUpdatePayment = async (orderId: string, newPaymentStatus: string) => {
         try {
             setUpdatingOrder(orderId)
-            await ordersApi.updatePaymentStatus(orderId, newPaymentStatus)
+            await ordersService.updatePaymentStatus(orderId, newPaymentStatus)
             await fetchOrders()
         } catch (err: any) {
             alert(err.message || "Failed to update payment status")
@@ -260,7 +155,7 @@ export default function AdminOrdersPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <Loader2 className="h-12 w-12 animate-spin text-primary"/>
             </div>
         )
     }
@@ -270,7 +165,7 @@ export default function AdminOrdersPage() {
             <div className="min-h-screen flex items-center justify-center bg-background p-4">
                 <Card className="max-w-md w-full text-center">
                     <CardContent className="pt-6">
-                        <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                        <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4"/>
                         <h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
                         <p className="text-muted-foreground mb-6">{error}</p>
                         <Button asChild>
@@ -302,7 +197,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <Clock className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Pending</p>
                                 </div>
                                 <p className="text-2xl font-bold text-foreground">{ordersByStatus.pending.length}</p>
@@ -315,7 +210,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                    <Package className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Preparation</p>
                                 </div>
                                 <p className="text-2xl font-bold text-primary">{ordersByStatus.preparation.length}</p>
@@ -328,7 +223,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                    <CreditCard className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Paid</p>
                                 </div>
                                 <p className="text-2xl font-bold text-primary">{ordersByStatus.payment_confirmed.length}</p>
@@ -341,7 +236,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Truck className="h-4 w-4 text-muted-foreground" />
+                                    <Truck className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Shipped</p>
                                 </div>
                                 <p className="text-2xl font-bold text-accent">{ordersByStatus.shipped.length}</p>
@@ -354,7 +249,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                    <CheckCircle className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Delivered</p>
                                 </div>
                                 <p className="text-2xl font-bold text-primary">{ordersByStatus.delivered.length}</p>
@@ -367,7 +262,7 @@ export default function AdminOrdersPage() {
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                                    <XCircle className="h-4 w-4 text-muted-foreground"/>
                                     <p className="text-sm text-muted-foreground">Cancelled</p>
                                 </div>
                                 <p className="text-2xl font-bold text-destructive">{ordersByStatus.cancelled.length}</p>
@@ -388,7 +283,7 @@ export default function AdminOrdersPage() {
                                         size="sm"
                                         onClick={() => setViewMode("cards")}
                                     >
-                                        <LayoutGrid className="h-4 w-4 mr-2" />
+                                        <LayoutGrid className="h-4 w-4 mr-2"/>
                                         Cards
                                     </Button>
                                     <Button
@@ -396,7 +291,7 @@ export default function AdminOrdersPage() {
                                         size="sm"
                                         onClick={() => setViewMode("table")}
                                     >
-                                        <TableIcon className="h-4 w-4 mr-2" />
+                                        <TableIcon className="h-4 w-4 mr-2"/>
                                         Table
                                     </Button>
                                 </div>
@@ -416,7 +311,7 @@ export default function AdminOrdersPage() {
                         {filteredOrders.length === 0 ? (
                             <Card>
                                 <CardContent className="p-12 text-center">
-                                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
                                     <p className="text-muted-foreground">No orders found</p>
                                 </CardContent>
                             </Card>
@@ -447,19 +342,21 @@ export default function AdminOrdersPage() {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div>
-                                                    <label className="block text-xs text-muted-foreground mb-1">Order Status</label>
+                                                    <label className="block text-xs text-muted-foreground mb-1">Order
+                                                        Status</label>
                                                     <Select
                                                         value={order.status}
                                                         onValueChange={(value) => handleUpdateStatus(order._id, value)}
                                                         disabled={updatingOrder === order._id}
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue />
+                                                            <SelectValue/>
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="pending">Pending</SelectItem>
                                                             <SelectItem value="preparation">In Preparation</SelectItem>
-                                                            <SelectItem value="payment_confirmed">Payment Confirmed</SelectItem>
+                                                            <SelectItem value="payment_confirmed">Payment
+                                                                Confirmed</SelectItem>
                                                             <SelectItem value="shipped">Shipped</SelectItem>
                                                             <SelectItem value="delivered">Delivered</SelectItem>
                                                             <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -468,14 +365,15 @@ export default function AdminOrdersPage() {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-xs text-muted-foreground mb-1">Payment Status</label>
+                                                    <label className="block text-xs text-muted-foreground mb-1">Payment
+                                                        Status</label>
                                                     <Select
                                                         value={order.paymentStatus}
                                                         onValueChange={(value) => handleUpdatePayment(order._id, value)}
                                                         disabled={updatingOrder === order._id}
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue />
+                                                            <SelectValue/>
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="pending">Pending</SelectItem>
@@ -487,12 +385,14 @@ export default function AdminOrdersPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-between items-center pt-4 border-t border-border">
+                                            <div
+                                                className="flex justify-between items-center pt-4 border-t border-border">
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <MapPin className="h-4 w-4" />
+                                                    <MapPin className="h-4 w-4"/>
                                                     {order.shippingAddress.city}, {order.shippingAddress.country}
                                                 </div>
-                                                <Button onClick={() => router.push(`/profile/orders/${order._id}`)}>View Details</Button>
+                                                <Button onClick={() => router.push(`/profile/orders/${order._id}`)}>View
+                                                    Details</Button>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -523,7 +423,7 @@ export default function AdminOrdersPage() {
                                         {filteredOrders.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center py-12">
-                                                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                                                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
                                                     <p className="text-muted-foreground">No orders found</p>
                                                 </TableCell>
                                             </TableRow>
@@ -535,19 +435,22 @@ export default function AdminOrdersPage() {
                                                 return (
                                                     <TableRow key={order._id} className="hover:bg-muted/50">
                                                         <TableCell>
-                                                            <div className="text-sm font-mono font-medium text-foreground">{order.orderNumber}</div>
+                                                            <div
+                                                                className="text-sm font-mono font-medium text-foreground">{order.orderNumber}</div>
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="text-sm text-foreground">
                                                                 {order.userId?.firstName} {order.userId?.lastName}
                                                             </div>
-                                                            <div className="text-xs text-muted-foreground">{order.userId?.email}</div>
+                                                            <div
+                                                                className="text-xs text-muted-foreground">{order.userId?.email}</div>
                                                         </TableCell>
                                                         <TableCell className="text-sm text-muted-foreground">
                                                             {formatDate(order.createdAt)}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <div className="text-sm font-semibold text-foreground">{formatPrice(order.total)}</div>
+                                                            <div
+                                                                className="text-sm font-semibold text-foreground">{formatPrice(order.total)}</div>
                                                             <div className="text-xs text-muted-foreground">
                                                                 {order.items.length} item{order.items.length > 1 ? "s" : ""}
                                                             </div>
@@ -559,12 +462,14 @@ export default function AdminOrdersPage() {
                                                                 disabled={updatingOrder === order._id}
                                                             >
                                                                 <SelectTrigger className="w-[180px]">
-                                                                    <SelectValue />
+                                                                    <SelectValue/>
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     <SelectItem value="pending">Pending</SelectItem>
-                                                                    <SelectItem value="preparation">In Preparation</SelectItem>
-                                                                    <SelectItem value="payment_confirmed">Payment Confirmed</SelectItem>
+                                                                    <SelectItem value="preparation">In
+                                                                        Preparation</SelectItem>
+                                                                    <SelectItem value="payment_confirmed">Payment
+                                                                        Confirmed</SelectItem>
                                                                     <SelectItem value="shipped">Shipped</SelectItem>
                                                                     <SelectItem value="delivered">Delivered</SelectItem>
                                                                     <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -578,7 +483,7 @@ export default function AdminOrdersPage() {
                                                                 disabled={updatingOrder === order._id}
                                                             >
                                                                 <SelectTrigger className="w-[140px]">
-                                                                    <SelectValue />
+                                                                    <SelectValue/>
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     <SelectItem value="pending">Pending</SelectItem>

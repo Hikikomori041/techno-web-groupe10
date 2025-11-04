@@ -51,14 +51,11 @@ export interface ProductFilters {
 export interface CreateProductDto {
     nom: string;
     prix: number;
-    description: string;
+    description: string | null | undefined;
+    images?: string[] | null | undefined;
     categoryId: string;
     specifications: Array<{ key: string; value: string }>;
     quantite_en_stock: number;
-}
-
-export interface UpdateProductDto extends CreateProductDto {
-    _id: string;
 }
 
 export interface Category {

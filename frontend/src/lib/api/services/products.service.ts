@@ -10,7 +10,7 @@ export const productsService = {
         return res.data;
     },
 
-    getAllProductsDashboard: async (): Promise<{ products: Product[] }> => {
+    getAllProductsDashboard: async (): Promise<Product[]> => {
         const res = await apiClient.get(ENDPOINTS.PRODUCTS.DASHBOARD_ALL, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },

@@ -18,6 +18,7 @@ import {usePathname} from "next/navigation";
 
 export function DashboardHeader() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [user, setUser] = useState<{ name?: string; email?: string; avatarUrl?: string } | null>(null);
     const pathname = usePathname();
 
@@ -28,6 +29,7 @@ export function DashboardHeader() {
                 if (response.user) {
                     setIsAuthenticated(true);
                     setUser(response.user);
+                    setIsAdmin(checkAdmin(response.user.roles))
                 } else {
                     setIsAuthenticated(false);
                 }
@@ -37,6 +39,10 @@ export function DashboardHeader() {
         };
         verifyAuth();
     }, []);
+
+    const checkAdmin = (roles: string[]) => {
+        return roles.includes("admin");
+    }
 
     const navLinks = [
         {href: "/dashboard/users", label: "Users"},

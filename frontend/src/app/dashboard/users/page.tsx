@@ -15,7 +15,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
-import {Pencil, Trash2, Users, Mail, Shield} from "lucide-react"
+import {Pencil, Trash2, Users, Mail, Shield, Package} from "lucide-react"
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
 import {usersService} from "@/lib/api/services/users.service";
 import {User} from '@/lib/api/definitions';
@@ -98,7 +98,7 @@ export default function UserManagementPage() {
         try {
             await usersService.deleteUser(userId);
             await fetchUsers();
-            toast.success('User deleted successfully!');
+            toast.info('User deleted successfully!');
             setIsDeleteDialogOpen(false);
         } catch (err: any) {
             toast.error(err.message || 'Failed to delete user');
@@ -155,88 +155,95 @@ export default function UserManagementPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>User</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Roles</TableHead>
-                                        <TableHead>Provider</TableHead>
-                                        <TableHead>Joined</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>{
-                                    users.map((user) => {
-                                        const providerBadge = getProviderBadge(user.provider)
-                                        return (
-                                            <TableRow key={user._id}>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <Avatar>
-                                                            <AvatarImage
-                                                                src={user.picture || "/placeholder.svg"}
-                                                                alt={`${user.firstName} ${user.lastName}`}
-                                                            />
-                                                            <AvatarFallback className="bg-primary/10 text-primary">
-                                                                {getInitials(user.firstName, user.lastName)}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                {user.firstName} {user.lastName}
-                                                            </p>
+                            {users.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8">
+                                        <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2"/>
+                                        <p className="text-muted-foreground">No Users found</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>User</TableHead>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Roles</TableHead>
+                                            <TableHead>Provider</TableHead>
+                                            <TableHead>Joined</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>{
+                                        users.map((user) => {
+                                            const providerBadge = getProviderBadge(user.provider)
+                                            return (
+                                                <TableRow key={user._id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar>
+                                                                <AvatarImage
+                                                                    src={user.picture || "/placeholder.svg"}
+                                                                    alt={`${user.firstName} ${user.lastName}`}
+                                                                />
+                                                                <AvatarFallback className="bg-primary/10 text-primary">
+                                                                    {getInitials(user.firstName, user.lastName)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div>
+                                                                <p className="font-medium">
+                                                                    {user.firstName} {user.lastName}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Mail className="h-4 w-4 text-muted-foreground"/>
-                                                        <span className="text-sm">{user.email}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {user.roles.map((role) => {
-                                                        return <Badge key={role}
-                                                                      variant={getRoleBadge(role).variant}>{role}</Badge>
-                                                    })}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={providerBadge.variant}>{providerBadge.label}</Badge>
-                                                </TableCell>
-                                                <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              {user.createdAt
-                                  ? new Date(user.createdAt).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                  })
-                                  : "Never"}
-                            </span>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button variant="outline" size="sm"
-                                                                onClick={() => handleEditRoles(user)}>
-                                                            <Pencil className="h-4 w-4"/>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleDelete(user)}
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )
-                                    })
-                                }
-                                </TableBody>
-                            </Table>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <Mail className="h-4 w-4 text-muted-foreground"/>
+                                                            <span className="text-sm">{user.email}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {user.roles.map((role) => {
+                                                            return <Badge key={role}
+                                                                          variant={getRoleBadge(role).variant}>{role}</Badge>
+                                                        })}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant={providerBadge.variant}>{providerBadge.label}</Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">
+                                                        {new Date(user.createdAt).toLocaleDateString("en-US", {
+                                                            month: "short",
+                                                            day: "numeric",
+                                                            year: "numeric",
+                                                        })}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="outline" size="sm"
+                                                                    onClick={() => handleEditRoles(user)}>
+                                                                <Pencil className="h-4 w-4"/>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(user)}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4"/>
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    }
+                                    </TableBody>
+                                </Table>
+                            )}
+
                         </div>
                     </CardContent>
                 </Card>
@@ -256,7 +263,7 @@ export default function UserManagementPage() {
                                             <Checkbox
                                                 id={role}
                                                 checked={selectedRoles.includes(role)}
-                                                onCheckedChange={()=>toggleRole(role) }
+                                                onCheckedChange={() => toggleRole(role)}
                                             />
                                             <Label htmlFor={role} className="capitalize">
                                                 {role}
