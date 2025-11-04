@@ -1,645 +1,1339 @@
-'use client';
+"use client"
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { checkAuth, User } from '@/lib/auth';
-import DashboardNav from '@/components/DashboardNav';
-import { categoriesApi, type Category } from '@/lib/categoriesApi';
+import {useEffect, useState, useMemo} from "react"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Badge} from "@/components/ui/badge"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {Plus, Pencil, Trash2, Package} from "lucide-react"
+import type {Category, CreateProductDto, Product} from "@/lib/api/definitions"
+import {categoriesService} from "@/lib/api/services/categories.service"
+import {productsService} from "@/lib/api/services/products.service"
+import {authService} from "@/lib/api/services/auth.service"
+import {toast} from "sonner"
+import {useRouter} from "next/navigation"
+import {ProductForm} from "@/app/_ui/products/product.form";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-interface Moderator {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-interface CategoryRef {
-  _id: string;
-  name: string;
-  description?: string;
-}
-
-interface Product {
-  _id: string;
-  nom: string;
-  prix: number;
-  description?: string;
-  images?: string[];
-  specifications: Array<{ key: string; value: string }>;
-  categoryId: CategoryRef | string;
-  moderatorId: Moderator | string;
-  quantite_en_stock: number;
-  date_de_creation: string;
-}
-
-interface ProductStats {
-  _id: string;
-  quantite_en_stock: number;
-  nombre_de_vente: number;
-}
-
-interface ProductWithStats extends Product {
-  stats?: ProductStats;
-}
-
-interface ProductForm {
-  nom: string;
-  prix: number;
-  description: string;
-  categoryId: string;
-  specifications: Array<{ key: string; value: string }>;
-}
 
 export default function ProductManagementPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [products, setProducts] = useState<ProductWithStats[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState<ProductForm>({
-    nom: '',
-    prix: 0,
-    description: '',
-    categoryId: '',
-    specifications: [],
-  });
-  const [stockInput, setStockInput] = useState<number>(0);
+    const router = useRouter()
+    const [products, setProducts] = useState<Product[]>([])
+    const [categories, setCategories] = useState<Category[] | null>(null)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+    const [editForm, setEditForm] = useState<Partial<CreateProductDto>>({})
 
-  useEffect(() => {
-    checkAuthAndFetchProducts();
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const data = await categoriesApi.getCategories();
-      setCategories(data.filter(cat => cat.isActive));
-    } catch (err) {
-      console.error('Failed to fetch categories:', err);
-    }
-  };
-
-  const checkAuthAndFetchProducts = async () => {
-    try {
-      const result = await checkAuth();
-      
-      if (!result.authenticated || !result.user) {
-        router.push('/login');
-        return;
-      }
-
-      // Check if user has admin or moderator role
-      const hasAccess = result.user.roles.includes('admin') || result.user.roles.includes('moderator');
-      if (!hasAccess) {
-        setError('Access denied. Admin or Moderator role required.');
-        return;
-      }
-
-      setUser(result.user);
-      await fetchProducts();
-    } catch (err) {
-      setError('Authentication failed');
-      router.push('/login');
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/products/dashboard/all`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch products');
-
-      const productsData = await response.json();
-      
-      // Fetch stats for all products
-      const productsWithStats = await Promise.all(
-        productsData.map(async (product: Product) => {
-          try {
-            const statsResponse = await fetch(`${API_URL}/product-stats/${product._id}`, {
-              credentials: 'include',
-            });
-            
-            if (statsResponse.ok) {
-              const text = await statsResponse.text();
-              if (text) {
-                const stats = JSON.parse(text);
-                return { ...product, stats };
-              }
+    const fetchProducts = async () => {
+        try {
+            const check = await authService.isAuthenticated()
+            if (!check.authenticated || !check.user) {
+                router.push('/sign-in')
+                return
             }
-          } catch (err) {
-            console.error(`Failed to fetch stats for ${product._id}:`, err);
-          }
-          return product;
+
+            if (!check.user.roles.includes("admin") && !check.user.roles.includes("moderator")) {
+                router.push('/unauthorized')
+                return
+            }
+
+            const fetchedProducts = await productsService.getAllProductsDashboard()
+            setProducts(fetchedProducts)
+            const fetchedCategories = await categoriesService.getAllCategories()
+            setCategories(fetchedCategories)
+        } catch (error) {
+            console.error("Error fetching data:", error)
+        }
+    }
+
+    useEffect(() => {
+        const loadData = async () => {
+            await fetchProducts()
+        }
+        loadData()
+    }, [])
+
+    // Create a category map for efficient lookup
+    const categoryMap = useMemo(() => {
+        if (!categories) return new Map()
+        return new Map(categories.map(cat => [cat._id, cat.name]))
+    }, [categories])
+
+    const getCategoryName = (categoryId: string) => {
+        return categoryMap.get(categoryId) || "Unknown"
+    }
+
+    const handleAdd = () => {
+        setEditForm({
+            nom: "",
+            prix: 0,
+            description: "",
+            images: [],
+            specifications: [],
+            categoryId: "",
+            quantite_en_stock: 0,
         })
-      );
-
-      setProducts(productsWithStats);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+        setIsAddDialogOpen(true)
     }
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      // Filter out empty specifications
-      const validSpecs = formData.specifications.filter(
-        spec => spec.key.trim() && spec.value.trim()
-      );
-
-      const productData = {
-        nom: formData.nom,
-        prix: parseFloat(formData.prix.toString()),
-        description: formData.description,
-        categoryId: formData.categoryId,
-        specifications: validSpecs,
-        quantite_en_stock: stockInput,
-      };
-
-      const url = editingProduct 
-        ? `${API_URL}/products/${editingProduct._id}`
-        : `${API_URL}/products/create`;
-      
-      const method = editingProduct ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save product');
-      }
-
-      // Reset form and refresh products
-      setFormData({
-        nom: '',
-        prix: 0,
-        description: '',
-        categoryId: '',
-        specifications: [],
-      });
-      setStockInput(0);
-      setShowAddForm(false);
-      setEditingProduct(null);
-      await fetchProducts();
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    const handleEdit = (product: Product) => {
+        setSelectedProduct(product)
+        setEditForm({
+            nom: product.nom,
+            prix: product.prix,
+            description: product.description,
+            images: product.images,
+            specifications: product.specifications,
+            categoryId: product.id_categorie,
+            quantite_en_stock: product.quantite_en_stock,
+        })
+        setIsEditDialogOpen(true)
     }
-  };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    const categoryId = typeof product.categoryId === 'string' 
-      ? product.categoryId 
-      : product.categoryId?._id || '';
-    
-    setFormData({
-      nom: product.nom,
-      prix: product.prix,
-      description: product.description || '',
-      categoryId: categoryId,
-      specifications: product.specifications || [],
-    });
-    setStockInput(product.quantite_en_stock || 0);
-    setShowAddForm(true);
-  };
-
-  // Helper functions for specifications
-  const addSpecification = () => {
-    setFormData({
-      ...formData,
-      specifications: [...formData.specifications, { key: '', value: '' }],
-    });
-  };
-
-  const removeSpecification = (index: number) => {
-    setFormData({
-      ...formData,
-      specifications: formData.specifications.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateSpecification = (index: number, field: 'key' | 'value', value: string) => {
-    const newSpecs = [...formData.specifications];
-    newSpecs[index][field] = value;
-    setFormData({
-      ...formData,
-      specifications: newSpecs,
-    });
-  };
-
-  const handleDelete = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-
-    try {
-      const response = await fetch(`${API_URL}/products/${productId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to delete product (${response.status})`);
-      }
-
-      await fetchProducts();
-      alert('Product deleted successfully!');
-    } catch (err: any) {
-      alert(`Error deleting product: ${err.message}`);
+    const handleDelete = (product: Product) => {
+        setSelectedProduct(product)
+        setIsDeleteDialogOpen(true)
     }
-  };
 
-  const handleCancel = () => {
-    setShowAddForm(false);
-    setEditingProduct(null);
-    setStockInput(0);
-    setFormData({
-      nom: '',
-      prix: 0,
-      description: '',
-      categoryId: '',
-      specifications: [],
-    });
-  };
+    const confirmDelete = async () => {
+        if (!selectedProduct) return
 
+        try {
+            await productsService.deleteProductById(selectedProduct._id)
+            toast.info("Product deleted successfully")
+            setIsDeleteDialogOpen(false)
+            setSelectedProduct(null)
+            await fetchProducts() // Refresh the list
+        } catch (err) {
+            console.error("Error deleting product:", err)
+            toast.error("Failed to delete product")
+        }
+    }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(price);
-  };
+    const saveAdd = async () => {
+        if (editForm.nom && editForm.prix && editForm.categoryId) {
+            try {
+                const newProduct: CreateProductDto = {
+                    nom: editForm.nom,
+                    prix: editForm.prix,
+                    description: editForm.description,
+                    images: editForm.images || [],
+                    specifications: editForm.specifications || [],
+                    categoryId: editForm.categoryId,
+                    quantite_en_stock: editForm.quantite_en_stock || 0,
+                }
+                await productsService.createProduct(newProduct)
+                await fetchProducts()
+                toast.success("Product added successfully")
+                setIsAddDialogOpen(false)
+                setEditForm({})
+            } catch (err) {
+                console.error("Error adding product:", err)
+                toast.error("Failed to add product")
+            }
+        } else {
+            toast.error("Please fill in all required fields")
+        }
+    }
 
-  if (loading) {
+    const saveEdit = async () => {
+        if (!selectedProduct || !editForm) return
+
+        try {
+            // Clean specifications by removing _id fields
+            const cleanSpecifications = (editForm.specifications || selectedProduct.specifications || []).map(
+                ({key, value}) => ({key, value})
+            )
+
+            const updatedProduct: CreateProductDto = {
+                nom: editForm.nom || selectedProduct.nom,
+                prix: editForm.prix || selectedProduct.prix,
+                description: editForm.description || selectedProduct.description,
+                images: editForm.images || selectedProduct.images || [],
+                specifications: cleanSpecifications,
+                categoryId: editForm.categoryId || selectedProduct.id_categorie,
+                quantite_en_stock: editForm.quantite_en_stock ?? selectedProduct.quantite_en_stock,
+            }
+            await productsService.updateProduct(selectedProduct._id, updatedProduct)
+            await fetchProducts()
+            toast.success("Product updated successfully")
+            setIsEditDialogOpen(false)
+            setSelectedProduct(null)
+            setEditForm({})
+        } catch (err) {
+            console.error("Error updating product:", err)
+            toast.error("Failed to update product")
+        }
+    }
+
+    const getStockStatus = (stock: number) => {
+        if (stock === 0) return {label: "Out of Stock", variant: "destructive" as const}
+        if (stock < 20) return {label: "Low Stock", variant: "secondary" as const}
+        return {label: "In Stock", variant: "default" as const}
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error && !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-red-600 dark:text-red-400 text-5xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-          <Link href="/dashboard" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardNav />
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Product Management
-              </h1>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                {products.length} product{products.length !== 1 ? 's' : ''} total
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowAddForm(!showAddForm);
-                  if (showAddForm) handleCancel();
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                {showAddForm ? 'Cancel' : '+ Add Product'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Add/Edit Form */}
-        {showAddForm && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Product Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nom}
-                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="e.g., Laptop Dell XPS 15"
-                  />
+        <div className="min-h-screen bg-background py-8">
+            <div className="container mx-auto px-4">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Product Management</h1>
+                    <p className="text-muted-foreground">Manage your product inventory</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Price (€) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.prix}
-                    onChange={(e) => setFormData({ ...formData, prix: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="999.99"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Category *
-                  </label>
-                  <select
-                    required
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="">Select a category...</option>
-                    {categories.map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Stock Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={stockInput}
-                    onChange={(e) => setStockInput(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Product description..."
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Specifications
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addSpecification}
-                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition"
-                  >
-                    + Add Specification
-                  </button>
-                </div>
-                
-                <div className="space-y-2">
-                  {formData.specifications.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                      No specifications added. Click "Add Specification" to add product details.
-                    </p>
-                  ) : (
-                    formData.specifications.map((spec, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={spec.key}
-                          onChange={(e) => updateSpecification(index, 'key', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          placeholder="e.g., RAM, CPU, Storage"
-                        />
-                        <input
-                          type="text"
-                          value={spec.value}
-                          onChange={(e) => updateSpecification(index, 'value', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          placeholder="e.g., 16GB DDR4"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSpecification(index)}
-                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                          title="Remove specification"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingProduct ? 'Update Product' : 'Create Product'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Products Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Owner
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {products.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
-                      <div className="text-gray-400 text-4xl mb-2">📦</div>
-                      <p className="text-gray-500 dark:text-gray-400">No products yet</p>
-                      <button
-                        onClick={() => setShowAddForm(true)}
-                        className="mt-4 text-blue-600 hover:underline"
-                      >
-                        Add your first product
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  products.map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {product.nom}
-                          </div>
-                          {product.description && (
-                            <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                              {product.description}
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>Products Overview</CardTitle>
+                                <CardDescription>View, edit, and manage all products</CardDescription>
                             </div>
-                          )}
+                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    onClick={handleAdd}>
+                                <Plus className="h-4 w-4 mr-2"/>
+                                Add Product
+                            </Button>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(product.prix)}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Stock</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {products.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8">
+                                                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2"/>
+                                                <p className="text-muted-foreground">No products found</p>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        products.map((product) => {
+                                            const stockStatus = getStockStatus(product.quantite_en_stock)
+                                            return (
+                                                <TableRow key={product._id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <div>
+                                                                <p className="font-medium">{product.nom}</p>
+                                                                {product.description && (
+                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>{getCategoryName(product.id_categorie)}</TableCell>
+                                                    <TableCell className="font-semibold">${product.prix}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={stockStatus.variant}>
+                                                            {stockStatus.label} ({product.quantite_en_stock})
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">
+                                                        {new Date(product.date_de_creation).toLocaleDateString()}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="outline" size="sm"
+                                                                    onClick={() => handleEdit(product)}>
+                                                                <Pencil className="h-4 w-4"/>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(product)}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4"/>
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          <div className={`text-sm font-semibold ${
-                            (product.quantite_en_stock || 0) > 10 
-                              ? 'text-green-600 dark:text-green-400' 
-                              : (product.quantite_en_stock || 0) > 0
-                              ? 'text-yellow-600 dark:text-yellow-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}>
-                            {product.quantite_en_stock !== undefined 
-                              ? `${product.quantite_en_stock} units` 
-                              : 'N/A'}
-                          </div>
-                          {product.stats?.nombre_de_vente !== undefined && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {product.stats.nombre_de_vente} sold
-                            </div>
-                          )}
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-left"
-                          >
-                            Update Stock
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {product.moderatorId && typeof product.moderatorId === 'object' ? (
-                            <>
-                              <div className="font-medium">
-                                {product.moderatorId.firstName} {product.moderatorId.lastName}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {product.moderatorId.email}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                          {typeof product.categoryId === 'object' ? product.categoryId.name : 'N/A'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(product.date_de_creation).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a
-                          href={`/products/${product._id}`}
-                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-4"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View
-                        </a>
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product._id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </CardContent>
+                </Card>
+
+                {/* Add Dialog */}
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Add New Product</DialogTitle>
+                            <DialogDescription>Create a new product with all necessary information</DialogDescription>
+                        </DialogHeader>
+                        <ProductForm editForm={editForm} setEditForm={setEditForm} categories={categories}/>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveAdd} className="bg-primary hover:bg-primary/90">
+                                Add Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Dialog */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Product</DialogTitle>
+                            <DialogDescription>Update product information and save changes</DialogDescription>
+                        </DialogHeader>
+                        <ProductForm editForm={editForm} setEditForm={setEditForm} categories={categories}/>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsEditDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveEdit} className="bg-primary hover:bg-primary/90">
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Product</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsDeleteDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={confirmDelete}>
+                                Delete Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    )
 }
 
+
+/*
+"use client"
+
+import { useEffect, useState, useMemo } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Plus, Pencil, Trash2, Package } from "lucide-react"
+import type { Category, CreateProductDto, Product } from "@/lib/api/definitions"
+import { categoriesService } from "@/lib/api/services/categories.service"
+import { productsService } from "@/lib/api/services/products.service"
+import { authService } from "@/lib/api/services/auth.service"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { ProductForm } from "@/app/_ui/products/product.form"
+
+/!*
+const initialProducts: Product[] = [
+    {
+        _id: "1",
+        nom: 'MacBook Pro 16"',
+        prix: 2499,
+        id_categorie: "laptops",
+        quantite_en_stock: 45,
+        date_de_creation: new Date().toISOString(),
+        description: "Powerful laptop for professionals",
+        images: ["/macbook-pro-laptop.png"],
+        specifications: [
+            { key: "Processor", value: "M3 Pro" },
+            { key: "RAM", value: "16GB" },
+            { key: "Storage", value: "512GB SSD" },
+        ],
+    },
+    {
+        _id: "2",
+        nom: "iPhone 15 Pro",
+        prix: 999,
+        id_categorie: "smartphones",
+        quantite_en_stock: 120,
+        date_de_creation: new Date().toISOString(),
+        description: "Latest flagship smartphone",
+        images: ["/modern-smartphone.png"],
+        specifications: [
+            { key: "Display", value: '6.1" OLED' },
+            { key: "Chip", value: "A17 Pro" },
+            { key: "Camera", value: "48MP" },
+        ],
+    },
+    {
+        _id: "3",
+        nom: "Sony WH-1000XM5",
+        prix: 399,
+        id_categorie: "accessories",
+        quantite_en_stock: 78,
+        date_de_creation: new Date().toISOString(),
+        description: "Premium noise-cancelling headphones",
+        images: ["/wireless-headphones.png"],
+        specifications: [
+            { key: "Type", value: "Over-ear" },
+            { key: "Battery", value: "30 hours" },
+            { key: "Connectivity", value: "Bluetooth 5.2" },
+        ],
+    },
+    {
+        _id: "4",
+        nom: 'Dell UltraSharp 27"',
+        prix: 549,
+        id_categorie: "monitors",
+        quantite_en_stock: 32,
+        date_de_creation: new Date().toISOString(),
+        description: "Professional 4K monitor",
+        images: ["/computer-monitor-display.png"],
+        specifications: [
+            { key: "Resolution", value: "3840x2160" },
+            { key: "Refresh Rate", value: "60Hz" },
+            { key: "Panel Type", value: "IPS" },
+        ],
+    },
+    {
+        _id: "5",
+        nom: "Samsung Galaxy S24",
+        prix: 899,
+        id_categorie: "smartphones",
+        quantite_en_stock: 0,
+        date_de_creation: new Date().toISOString(),
+        description: "Android flagship device",
+        images: ["/modern-smartphone.png"],
+        specifications: [
+            { key: "Display", value: '6.2" AMOLED' },
+            { key: "Processor", value: "Snapdragon 8 Gen 3" },
+            { key: "RAM", value: "8GB" },
+        ],
+    },
+]
+*!/
+
+export default function ProductManagementPage() {
+    const router = useRouter()
+    const [products, setProducts] = useState<Product[]>([])
+    const [categories, setCategories] = useState<Category[] | null>(null)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+    const [editForm, setEditForm] = useState<Partial<CreateProductDto>>({})
+
+    const fetchProducts = async () => {
+        try {
+            const check = await authService.isAuthenticated()
+            if (!check.authenticated || !check.user) {
+                router.push('/login')
+                return
+            }
+            const fetchedProducts = await productsService.getAllProductsDashboard()
+            setProducts(fetchedProducts)
+            const fetchedCategories = await categoriesService.getAllCategories()
+            setCategories(fetchedCategories)
+        } catch (error) {
+            console.error("Error fetching data:", error)
+        }
+    }
+
+    useEffect(() => {
+        const loadData = async () => {
+            await fetchProducts()
+        }
+        loadData()
+    }, [])
+
+    // Create a category map for efficient lookup
+    const categoryMap = useMemo(() => {
+        if (!categories) return new Map()
+        return new Map(categories.map(cat => [cat._id, cat.name]))
+    }, [categories])
+
+    const getCategoryName = (categoryId: string) => {
+        return categoryMap.get(categoryId) || "Unknown"
+    }
+
+    const handleAdd = () => {
+        setEditForm({
+            nom: "",
+            prix: 0,
+            description: "",
+            images: [],
+            specifications: [],
+            categoryId: "",
+            quantite_en_stock: 0,
+        })
+        setIsAddDialogOpen(true)
+    }
+
+    const handleEdit = (product: Product) => {
+        setEditForm({
+            nom: product.nom,
+            prix: product.prix,
+            description: product.description,
+            images: product.images,
+            specifications: product.specifications,
+            categoryId: product.id_categorie,
+            quantite_en_stock: product.quantite_en_stock,
+        })
+        setIsEditDialogOpen(true)
+    }
+
+    const handleDelete = (product: Product) => {
+        setSelectedProduct(product)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!selectedProduct) return
+
+        try {
+            await productsService.deleteProductById(selectedProduct._id)
+            toast.info("Product deleted successfully")
+            setIsDeleteDialogOpen(false)
+            setSelectedProduct(null)
+            await fetchProducts() // Refresh the list
+        } catch (err) {
+            console.error("Error deleting product:", err)
+            toast.error("Failed to delete product")
+        }
+    }
+
+    const saveAdd = async () => {
+        if (editForm.nom && editForm.prix && editForm.categoryId) {
+            try {
+                const newProduct: CreateProductDto = {
+                    nom: editForm.nom,
+                    prix: editForm.prix,
+                    description: editForm.description,
+                    images: editForm.images || [],
+                    specifications: editForm.specifications || [],
+                    categoryId: editForm.categoryId,
+                    quantite_en_stock: editForm.quantite_en_stock || 0,
+                }
+                await productsService.createProduct(newProduct)
+                await fetchProducts()
+                toast.success("Product added successfully")
+                setIsAddDialogOpen(false)
+                setEditForm({})
+            } catch (err) {
+                console.error("Error adding product:", err)
+                toast.error("Failed to add product")
+            }
+        } else {
+            toast.error("Please fill in all required fields")
+        }
+    }
+
+    const saveEdit = async () => {
+        if (!selectedProduct || !editForm) return
+
+        try {
+            const cleanSpecifications = (editForm.specifications || selectedProduct.specifications || []).map(
+                ({ key, value }) => ({ key, value })
+            )
+
+            const updatedProduct: CreateProductDto = {
+                nom: editForm.nom || selectedProduct.nom,
+                prix: editForm.prix || selectedProduct.prix,
+                description: editForm.description || selectedProduct.description,
+                images: editForm.images || selectedProduct.images || [],
+                specifications: cleanSpecifications,
+                categoryId: editForm.categoryId || selectedProduct.id_categorie,
+                quantite_en_stock: editForm.quantite_en_stock ?? selectedProduct.quantite_en_stock,
+            }
+
+            console.log(updatedProduct)
+
+            await productsService.updateProduct(selectedProduct._id, updatedProduct)
+            await fetchProducts()
+            toast.success("Product updated successfully")
+            setIsEditDialogOpen(false)
+            setSelectedProduct(null)
+            setEditForm({})
+        } catch (err) {
+            console.error("Error updating product:", err)
+            toast.error("Failed to update product")
+        }
+    }
+
+    const getStockStatus = (stock: number) => {
+        if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const }
+        if (stock < 20) return { label: "Low Stock", variant: "secondary" as const }
+        return { label: "In Stock", variant: "default" as const }
+    }
+
+    return (
+        <div className="min-h-screen bg-background py-8">
+            <div className="container mx-auto px-4">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Product Management</h1>
+                    <p className="text-muted-foreground">Manage your product inventory</p>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>Products Overview</CardTitle>
+                                <CardDescription>View, edit, and manage all products</CardDescription>
+                            </div>
+                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    onClick={handleAdd}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Product
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Stock</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {products.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8">
+                                                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                                                <p className="text-muted-foreground">No products found</p>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        products.map((product) => {
+                                            const stockStatus = getStockStatus(product.quantite_en_stock)
+                                            return (
+                                                <TableRow key={product._id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <div>
+                                                                <p className="font-medium">{product.nom}</p>
+                                                                {product.description && (
+                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>{getCategoryName(product.id_categorie)}</TableCell>
+                                                    <TableCell className="font-semibold">${product.prix}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={stockStatus.variant}>
+                                                            {stockStatus.label} ({product.quantite_en_stock})
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">
+                                                        {new Date(product.date_de_creation).toLocaleDateString()}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="outline" size="sm"
+                                                                    onClick={() => handleEdit(product)}>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(product)}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/!* Add Dialog *!/}
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Add New Product</DialogTitle>
+                            <DialogDescription>Create a new product with all necessary information</DialogDescription>
+                        </DialogHeader>
+                        <ProductForm editForm={editForm} setEditForm={setEditForm} categories={categories} />
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveAdd} className="bg-primary hover:bg-primary/90">
+                                Add Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/!* Edit Dialog *!/}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Product</DialogTitle>
+                            <DialogDescription>Update product information and save changes</DialogDescription>
+                        </DialogHeader>
+                        <ProductForm editForm={editForm} setEditForm={setEditForm} categories={categories} />
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsEditDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveEdit} className="bg-primary hover:bg-primary/90">
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/!* Delete Confirmation Dialog *!/}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Product</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsDeleteDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={confirmDelete}>
+                                Delete Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </div>
+    )
+}
+
+
+
+
+/!*
+"use client"
+
+import {useEffect, useState} from "react"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Badge} from "@/components/ui/badge"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {Label} from "@/components/ui/label"
+import {Textarea} from "@/components/ui/textarea"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Search, Plus, Pencil, Trash2, Package, X} from "lucide-react"
+import type {Category, CreateProductDto, Product, UpdateProductDto} from "@/lib/api/definitions"
+import {categoriesService} from "@/lib/api/services/categories.service";
+import {productsService} from "@/lib/api/services/products.service";
+import {authService} from "@/lib/api/services/auth.service";
+import {toast} from "sonner";
+import {useRouter} from "next/navigation";
+
+const initialProducts: Product[] = [
+    {
+        _id: "1",
+        nom: 'MacBook Pro 16"',
+        prix: 2499,
+        id_categorie: "laptops",
+        quantite_en_stock: 45,
+        date_de_creation: new Date().toISOString(),
+        description: "Powerful laptop for professionals",
+        images: ["/macbook-pro-laptop.png"],
+        specifications: [
+            {key: "Processor", value: "M3 Pro"},
+            {key: "RAM", value: "16GB"},
+            {key: "Storage", value: "512GB SSD"},
+        ],
+    },
+    {
+        _id: "2",
+        nom: "iPhone 15 Pro",
+        prix: 999,
+        id_categorie: "smartphones",
+        quantite_en_stock: 120,
+        date_de_creation: new Date().toISOString(),
+        description: "Latest flagship smartphone",
+        images: ["/modern-smartphone.png"],
+        specifications: [
+            {key: "Display", value: '6.1" OLED'},
+            {key: "Chip", value: "A17 Pro"},
+            {key: "Camera", value: "48MP"},
+        ],
+    },
+    {
+        _id: "3",
+        nom: "Sony WH-1000XM5",
+        prix: 399,
+        id_categorie: "accessories",
+        quantite_en_stock: 78,
+        date_de_creation: new Date().toISOString(),
+        description: "Premium noise-cancelling headphones",
+        images: ["/wireless-headphones.png"],
+        specifications: [
+            {key: "Type", value: "Over-ear"},
+            {key: "Battery", value: "30 hours"},
+            {key: "Connectivity", value: "Bluetooth 5.2"},
+        ],
+    },
+    {
+        _id: "4",
+        nom: 'Dell UltraSharp 27"',
+        prix: 549,
+        id_categorie: "monitors",
+        quantite_en_stock: 32,
+        date_de_creation: new Date().toISOString(),
+        description: "Professional 4K monitor",
+        images: ["/computer-monitor-display.png"],
+        specifications: [
+            {key: "Resolution", value: "3840x2160"},
+            {key: "Refresh Rate", value: "60Hz"},
+            {key: "Panel Type", value: "IPS"},
+        ],
+    },
+    {
+        _id: "5",
+        nom: "Samsung Galaxy S24",
+        prix: 899,
+        id_categorie: "smartphones",
+        quantite_en_stock: 0,
+        date_de_creation: new Date().toISOString(),
+        description: "Android flagship device",
+        images: ["/modern-smartphone.png"],
+        specifications: [
+            {key: "Display", value: '6.2" AMOLED'},
+            {key: "Processor", value: "Snapdragon 8 Gen 3"},
+            {key: "RAM", value: "8GB"},
+        ],
+    },
+]
+
+/!*const categories = [
+    {id: "laptops", name: "Laptops"},
+    {id: "smartphones", name: "Smartphones"},
+    {id: "accessories", name: "Accessories"},
+    {id: "monitors", name: "Monitors"},
+]*!/
+
+export default function ProductManagementPage() {
+    const router = useRouter();
+    const [products, setProducts] = useState<Product[]>(initialProducts)
+    const [categories, setCategories] = useState<Category[] | null>(null)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+    const [editForm, setEditForm] = useState<Partial<UpdateProductDto>>({})
+
+    const fetchProducts = async () => {
+        try {
+            const check = await authService.isAuthenticated()
+            if (!check.authenticated || !check.user) {
+                router.push('/login');
+                return;
+            }
+            const fetchedProducts = await productsService.getAllProductsDashboard()
+            setProducts(fetchedProducts)
+            const fetchedCategories = await categoriesService.getAllCategories()
+            setCategories(fetchedCategories)
+        } catch (error) {
+            console.error("Error fetching users:", error)
+
+        }
+    }
+
+    useEffect(() => {
+        const loadData = async () => {
+            await fetchProducts()
+        }
+        loadData()
+    }, []);
+
+     function getCategoryName(categoryId: string) {
+        const res = await categoriesService.getCategory(categoryId)
+        return res.name;
+    }
+
+    const handleAdd = () => {
+        setEditForm({
+            nom: "",
+            prix: 0,
+            description: "",
+            images: [],
+            specifications: [],
+            categoryId: "",
+            quantite_en_stock: 0,
+        })
+        setIsAddDialogOpen(true)
+    }
+
+    const handleEdit = (product: Product) => {
+        setSelectedProduct(product)
+        setEditForm(product)
+        setIsEditDialogOpen(true)
+    }
+
+    const handleDelete = (product: Product) => {
+        setSelectedProduct(product)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!selectedProduct)
+            return
+        try {
+            if (selectedProduct) {
+                await productsService.deleteProductById(selectedProduct._id)
+                toast.info("Product deleted successfully")
+            }
+        } catch (err){
+
+        }
+
+    }
+
+    const saveAdd = async () => {
+        if (editForm.nom && editForm.prix && editForm.categoryId) {
+            const newProduct: CreateProductDto = {
+                nom: editForm.nom,
+                prix: editForm.prix,
+                description: editForm.description,
+                images: editForm.images || [],
+                specifications: editForm.specifications || [],
+                categoryId: editForm.categoryId,
+                quantite_en_stock: editForm.quantite_en_stock || 0,
+            }
+            await productsService.createProduct(newProduct)
+            await fetchProducts()
+            toast.success("Product added successfully")
+            setIsAddDialogOpen(false)
+            setEditForm({})
+        }
+    }
+
+    const saveEdit = async () => {
+        if (!editForm) return;
+        if (selectedProduct && editForm) {
+            const updatedProduct: UpdateProductDto = {
+                _id: selectedProduct._id,
+                nom: editForm.nom || selectedProduct.nom,
+                prix: editForm.prix || selectedProduct.prix,
+                description: editForm.description || selectedProduct.description,
+                images: editForm.images || selectedProduct.images || [],
+                specifications: editForm.specifications || selectedProduct.specifications || [],
+                categoryId: editForm.categoryId || selectedProduct.id_categorie,
+                quantite_en_stock: editForm.quantite_en_stock || selectedProduct.quantite_en_stock,
+            }
+            await productsService.updateProduct(selectedProduct._id, updatedProduct)
+            await fetchProducts()
+            toast.success("Product updated successfully")
+            setIsEditDialogOpen(false)
+            setSelectedProduct(null)
+            setEditForm({})
+        }
+    }
+
+    const getStockStatus = (stock: number) => {
+        if (stock === 0) return {label: "Out of Stock", variant: "destructive" as const}
+        if (stock < 20) return {label: "Low Stock", variant: "secondary" as const}
+        return {label: "In Stock", variant: "default" as const}
+    }
+
+    const addSpecification = () => {
+        setEditForm({
+            ...editForm,
+            specifications: [...(editForm.specifications || []), {key: "", value: ""}],
+        })
+    }
+
+    const updateSpecification = (index: number, field: "key" | "value", value: string) => {
+        const specs = [...(editForm.specifications || [])]
+        specs[index] = {...specs[index], [field]: value}
+        setEditForm({...editForm, specifications: specs})
+    }
+
+    const removeSpecification = (index: number) => {
+        setEditForm({
+            ...editForm,
+            specifications: editForm.specifications?.filter((_, i) => i !== index),
+        })
+    }
+
+    const addImage = () => {
+        setEditForm({
+            ...editForm,
+            images: [...(editForm.images || []), ""],
+        })
+    }
+
+    const updateImage = (index: number, value: string) => {
+        const imgs = [...(editForm.images || [])]
+        imgs[index] = value
+        setEditForm({...editForm, images: imgs})
+    }
+
+    const removeImage = (index: number) => {
+        setEditForm({
+            ...editForm,
+            images: editForm.images?.filter((_, i) => i !== index),
+        })
+    }
+
+    const ProductFormFields = () => (
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid gap-2">
+                <Label htmlFor="nom">Product Name *</Label>
+                <Input
+                    id="nom"
+                    value={editForm.nom || ""}
+                    onChange={(e) => setEditForm({...editForm, nom: e.target.value})}
+                    placeholder="Enter product name"
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="prix">Price ($) *</Label>
+                    <Input
+                        id="prix"
+                        type="number"
+                        value={editForm.prix || ""}
+                        onChange={(e) => setEditForm({...editForm, prix: Number.parseFloat(e.target.value)})}
+                        placeholder="0.00"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="quantite_en_stock">Stock *</Label>
+                    <Input
+                        id="quantite_en_stock"
+                        type="number"
+                        value={editForm.quantite_en_stock || ""}
+                        onChange={(e) => setEditForm({...editForm, quantite_en_stock: Number.parseInt(e.target.value)})}
+                        placeholder="0"
+                    />
+                </div>
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="id_categorie">Category *</Label>
+                <Select
+                    value={editForm.categoryId}
+                    onValueChange={(value) => setEditForm({...editForm, categoryId: value})}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select category"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        {categories?.map((cat) => (
+                            <SelectItem key={cat._id} value={cat._id}>
+                                {cat.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    value={editForm.description || ""}
+                    onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                    rows={3}
+                    placeholder="Enter product description"
+                />
+            </div>
+
+            {/!* Images Section *!/}
+            <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                    <Label>Images</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addImage}>
+                        <Plus className="h-4 w-4 mr-1"/>
+                        Add Image
+                    </Button>
+                </div>
+                {editForm.images && editForm.images.length > 0 ? (
+                    <div className="space-y-2">
+                        {editForm.images.map((image, index) => (
+                            <div key={index} className="flex gap-2">
+                                <Input
+                                    value={image}
+                                    onChange={(e) => updateImage(index, e.target.value)}
+                                    placeholder="Image URL"
+                                    className="flex-1"
+                                />
+                                <Button type="button" variant="outline" size="icon" onClick={() => removeImage(index)}>
+                                    <X className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No images added</p>
+                )}
+            </div>
+
+            {/!* Specifications Section *!/}
+            <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                    <Label>Specifications</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addSpecification}>
+                        <Plus className="h-4 w-4 mr-1"/>
+                        Add Specification
+                    </Button>
+                </div>
+                {editForm.specifications && editForm.specifications.length > 0 ? (
+                    <div className="space-y-2">
+                        {editForm.specifications.map((spec, index) => (
+                            <div key={index} className="flex gap-2">
+                                <Input
+                                    value={spec.key}
+                                    onChange={(e) => updateSpecification(index, "key", e.target.value)}
+                                    placeholder="Key (e.g., RAM)"
+                                    className="flex-1"
+                                />
+                                <Input
+                                    value={spec.value}
+                                    onChange={(e) => updateSpecification(index, "value", e.target.value)}
+                                    placeholder="Value (e.g., 16GB)"
+                                    className="flex-1"
+                                />
+                                <Button type="button" variant="outline" size="icon"
+                                        onClick={() => removeSpecification(index)}>
+                                    <X className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No specifications added</p>
+                )}
+            </div>
+        </div>
+    )
+
+    return (
+        <div className="min-h-screen bg-background py-8">
+            <div className="container mx-auto px-4">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Product Management</h1>
+                    <p className="text-muted-foreground">Manage your product inventory</p>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>Products Overview</CardTitle>
+                                <CardDescription>View, edit, and manage all products</CardDescription>
+                            </div>
+                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    onClick={handleAdd}>
+                                <Plus className="h-4 w-4 mr-2"/>
+                                Add Product
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Stock</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {products.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8">
+                                                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2"/>
+                                                <p className="text-muted-foreground">No products found</p>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        products.map((product) => {
+                                            const stockStatus = getStockStatus(product.quantite_en_stock)
+                                            return (
+                                                <TableRow key={product._id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <div>
+                                                                <p className="font-medium">{product.nom}</p>
+                                                                {product.description && (
+                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>{getCategoryName(product.id_categorie)}</TableCell>
+                                                    <TableCell className="font-semibold">${product.prix}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={stockStatus.variant}>
+                                                            {stockStatus.label} ({product.quantite_en_stock})
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">
+                                                        {new Date(product.date_de_creation).toLocaleDateString()}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="outline" size="sm"
+                                                                    onClick={() => handleEdit(product)}>
+                                                                <Pencil className="h-4 w-4"/>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(product)}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4"/>
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Add New Product</DialogTitle>
+                            <DialogDescription>Create a new product with all necessary information</DialogDescription>
+                        </DialogHeader>
+                        <ProductFormFields/>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveAdd} className="bg-primary hover:bg-primary/90">
+                                Add Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Product</DialogTitle>
+                            <DialogDescription>Update product information and save changes</DialogDescription>
+                        </DialogHeader>
+                        <ProductFormFields/>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsEditDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveEdit} className="bg-primary hover:bg-primary/90">
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/!* Delete Confirmation Dialog *!/}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Product</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => {
+                                setIsDeleteDialogOpen(false)
+                                setSelectedProduct(null)
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive"onClick={() => selectedProduct && confirmDelete()}>
+                                Delete Product
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </div>
+    )
+}
+*!/
+*/
