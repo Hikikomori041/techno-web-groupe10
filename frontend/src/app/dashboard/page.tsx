@@ -23,7 +23,6 @@ import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {Footer} from "@/app/_ui/commun/footer";
-import {DashboardHeader} from "@/app/_ui/commun/dashboard-header";
 
 
 export default function DashboardPage() {
@@ -135,7 +134,6 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            <DashboardHeader/>
             <div className="py-8 px-4">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}

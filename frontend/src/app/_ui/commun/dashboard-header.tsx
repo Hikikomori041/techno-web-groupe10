@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect, useState} from "react";
-import { Menu, User, LogOut} from "lucide-react";
+import {Menu, User, LogOut} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {
@@ -14,15 +14,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {authService} from "@/lib/api/services/auth.service";
-import {useCart} from "@/context/cart.context";
-import {useRouter} from "next/navigation";
-
+import {usePathname} from "next/navigation";
 
 export function DashboardHeader() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<{ name?: string; email?: string; avatarUrl?: string } | null>(null);
-    const {cartCount} = useCart();
-    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         const verifyAuth = async () => {
@@ -41,6 +38,13 @@ export function DashboardHeader() {
         verifyAuth();
     }, []);
 
+    const navLinks = [
+        {href: "/dashboard/users", label: "Users"},
+        {href: "/dashboard/products", label: "Products"},
+        {href: "/dashboard/orders", label: "Orders"},
+        {href: "/products", label: "Shop Now"},
+    ];
+
     return (
         <header
             className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -55,38 +59,26 @@ export function DashboardHeader() {
                     <nav className="flex items-center gap-4">
                         {/* Navigation Links (Desktop Only) */}
                         <div className="hidden md:flex items-center gap-6 ml-8">
-                            <Link
-                                href="/dashboard/users"
-                                className="text-sm font-medium hover:text-accent transition-colors"
-                            >
-                                Users
-                            </Link>
-
-                            <Link
-                                href="/dashboard/products"
-                                className="text-sm font-medium hover:text-accent transition-colors"
-                            >
-                                Products
-                            </Link>
-
-                            <Link
-                                href="/dashboard/orders"
-                                className="text-sm font-medium hover:text-accent transition-colors"
-                            >
-                                Orders
-                            </Link>
-
-                            <Link
-                                href="/products"
-                                className="text-sm font-medium hover:text-accent transition-colors"
-                            >
-                                Shop Now
-                            </Link>
+                            {navLinks.map(({href, label}) => {
+                                const isActive = pathname === href;
+                                return (
+                                    <Link
+                                        key={href}
+                                        href={href}
+                                        className={`flex items-center justify-center text-sm font-medium transition-colors rounded-md px-3 py-1.5 ${
+                                            isActive
+                                                ? "bg-accent text-accent-foreground"
+                                                : "hover:text-accent hover:bg-muted"
+                                        }`}
+                                    >
+                                        {label}
+                                    </Link>
+                                );
+                            })}
                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-2">
-
                             {/* Menu (Mobile) */}
                             <Button variant="ghost" size="icon" className="md:hidden">
                                 <Menu className="h-5 w-5"/>

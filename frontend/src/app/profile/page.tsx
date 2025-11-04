@@ -18,10 +18,17 @@ export default function ProfilePage() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const userData = await authService.profile();
-                setUser(userData);
-                const userOrders = await ordersService.getUserOrders();
-                setOrders(userOrders);
+                const userData = await authService.isAuthenticated();
+                if (!userData.authenticated) {
+                    router.push("/login");
+                    return;
+                } else {
+                    if (userData.user){
+                        setUser(userData.user);
+                        const userOrders = await ordersService.getUserOrders();
+                        setOrders(userOrders);
+                    }
+                }
             } catch (error) {
                 console.error("Failed to fetch user data:", error);
             }
