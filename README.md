@@ -1,4 +1,4 @@
-﻿# Achetez.fr - Plateforme de Vente de Matériel Informatique
+﻿# Achetez.fr - Plateforme de e-commerce spécialisée dans l'informatique
  
 Projet du groupe 10 (trinôme) du cours de M2 Technologies Web
 
@@ -19,6 +19,7 @@ Projet du groupe 10 (trinôme) du cours de M2 Technologies Web
 - [Structure du projet](#structure-du-projet)
 - [API Documentation](#api-documentation)
 - [Tests](#tests)
+- [Captures d'écran](#captures-décran)
 - [Licence](#licence)
 - [Support](#support)
 
@@ -371,6 +372,40 @@ cd frontend
 npm run test
 ```
 
+## Captures d'écran
+
+### Page d'accueil
+![Page d'accueil](https://drive.google.com/uc?export=view&id=1noz221_AkwMYnINe120ewTlOneSpUY1E)
+
+### Connexion
+![Page de connexion](https://drive.google.com/uc?export=view&id=1DGJHItoYxgWQaHaDhUpPdEJGjoVeDSui)
+
+### Produits
+![Produits](https://drive.google.com/uc?export=view&id=1D4zNs8H1-R9wjCb4wuxSJuFME5ublmn3)
+
+### Détails d'un produit
+![Détails d'un produit](https://drive.google.com/uc?export=view&id=1J24UB-VOPJZpnBowLra-elmG5oWbKt1E)
+
+### Panier
+![Panier](https://drive.google.com/uc?export=view&id=1jTU5SWva5AcQLH4E0DP23RthR8yQfwsy)
+
+### Dashboard - 1
+![Dashboard - 1](https://drive.google.com/uc?export=view&id=1MXP8g6yAW-RaLxPJXnQf9gEgQ4d4o-so)
+
+### Dashboard - 2
+![Dashboard - 2](https://drive.google.com/uc?export=view&id=1Rpx9YohhlJled8bYihSI7qgQBm8wgc7U)
+
+### Dashboard - Produits
+![Dashboard - Produits](https://drive.google.com/uc?export=view&id=1cbF3NAjMoYTbwxXrJqKwLFrmfXsV16Lh)
+
+### Dashboard - Catégories
+![Dashboard - Catégories](https://drive.google.com/uc?export=view&id=1YapxPWRuFzmKHdkGH2ne-EU1Ns3w2UAN)
+
+### Dashboard - Commandes
+![Dashboard - Commandes](https://drive.google.com/uc?export=view&id=1UIPsKPy9oGL6MztFc3lBXyKsin-vyJVW)
+
+### Dashboard - Utilisateurs
+![Dashboard - Utilisateurs](https://drive.google.com/uc?export=view&id=1LbnQ3YG8Xh3EAdGewzSktdEO7Ic8J3pg)
 
 ## Licence
 
@@ -385,6 +420,7 @@ Pour toute question ou problème:
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
