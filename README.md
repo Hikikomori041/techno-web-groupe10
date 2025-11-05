@@ -292,8 +292,6 @@ techno-web-groupe10/
 │   │   └── middleware.ts     # Middleware Next.js
 │   ├── public/               # Assets statiques
 │   └── package.json
-│
-├── docs/                     # Documentation complète
 └── README.md
 ```
 
@@ -411,6 +409,7 @@ Ce projet est développé dans le cadre d'un cours universitaire.
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
