@@ -387,10 +387,8 @@ npm run test
 ### Panier
 ![Panier](https://drive.google.com/uc?export=view&id=1jTU5SWva5AcQLH4E0DP23RthR8yQfwsy)
 
-### Dashboard - 1
+### Dashboard
 ![Dashboard - 1](https://drive.google.com/uc?export=view&id=1MXP8g6yAW-RaLxPJXnQf9gEgQ4d4o-so)
-
-### Dashboard - 2
 ![Dashboard - 2](https://drive.google.com/uc?export=view&id=1Rpx9YohhlJled8bYihSI7qgQBm8wgc7U)
 
 ### Dashboard - Produits
@@ -413,6 +411,7 @@ Ce projet est développé dans le cadre d'un cours universitaire.
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
