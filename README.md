@@ -167,10 +167,10 @@ Lors de la création d'une produit, un modérateur peut faire générer sa descr
 
 ### 1. Cloner le repository
 
-\`\`\`bash
+```bash
 git clone https://github.com/votre-repo/techno-web-groupe10.git
 cd techno-web-groupe10
-\`\`\`
+```
 
 ### 2. Installation et configuration
 
@@ -184,7 +184,7 @@ Pour lancer le serveur front-end, il faut utiliser `$env:PORT=3001;pnpm run dev`
 
 ## Variables d'environnement dans `.env`:
 
-\`\`\`env
+```env
 ### MongoDB
 DB_USER=votre_utilisateur
 DB_PASSWORD=votre_mot_de_passe
@@ -207,35 +207,35 @@ REDIRECT_LOGIN_URL=http://localhost:3001/products
 ### Server
 PORT=3000
 NODE_ENV=development
-\`\`\`
+```
 
 Lancer le backend:
 
-\`\`\`bash
+```bash
 pnpm run start:dev
-\`\`\`
+```
 
 Le backend sera accessible sur `http://localhost:3000`
 La documentation Swagger sur `http://localhost:3000/api`
 
 ### 3. Configuration du Frontend
 
-\`\`\`bash
+```bash
 cd frontend
 pnpm install
-\`\`\`
+```
 
 Créer `.env.local`:
 
-\`\`\`env
+```env
 NEXT_PUBLIC_API_URL=http://localhost:3000
-\`\`\`
+```
 
 Lancer le frontend:
 
-\`\`\`bash
+```bash
 pnpm run dev
-\`\`\`
+```
 
 Le frontend sera accessible sur `http://localhost:3001`
 
@@ -243,13 +243,13 @@ Le frontend sera accessible sur `http://localhost:3001`
 
 Utiliser l'endpoint Swagger ou créer directement en base:
 
-\`\`\`bash
+```bash
 # Via MongoDB Shell ou Compass
 db.users.updateOne(
   { email: "admin@example.com" },
   { $set: { roles: ["admin"] } }
 )
-\`\`\`
+```
 
 ## Structure du projet
 
@@ -344,7 +344,7 @@ Documentation Swagger complète : `http://localhost:3000/api`
 
 ### Backend
 
-\`\`\`bash
+```bash
 cd backend
 
 # Tests unitaires
@@ -355,7 +355,7 @@ npm run test:e2e
 
 # Couverture de code
 npm run test:cov
-\`\`\`
+```
 
 Tests implémentés:
 - Services (Auth, Categories, Products)
@@ -363,10 +363,10 @@ Tests implémentés:
 
 ### Frontend
 
-\`\`\`bash
+```bash
 cd frontend
 npm run test
-\`\`\`
+```
 
 
 ## Licence
@@ -382,4 +382,5 @@ Pour toute question ou problème:
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
