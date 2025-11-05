@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect, useState} from "react";
-import {Menu, User, LogOut} from "lucide-react";
+import {Menu, User, LogOut, BarChart3} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {
@@ -56,10 +56,12 @@ export function DashboardHeader() {
     }
 
     const navLinks = [
-        {href: "/dashboard/users", label: "Users", adminOnly: true},
-        {href: "/dashboard/products", label: "Products", adminOnly: false},
-        {href: "/dashboard/orders", label: "Orders", adminOnly: true},
-        {href: "/products", label: "Shop Now", adminOnly: false},
+        {href: "/dashboard", label: "Statistiques", adminOnly: false},
+        {href: "/dashboard/products", label: "Produits", adminOnly: false},
+        {href: "/dashboard/categories", label: "Catégories", adminOnly: false},
+        {href: "/dashboard/orders", label: "Commandes", adminOnly: false}, // ✅ Accessible aux modérateurs
+        {href: "/dashboard/users", label: "Utilisateurs", adminOnly: true},
+        {href: "/products", label: "Boutique", adminOnly: false},
     ];
 
     const visibleNavLinks = navLinks.filter(link => {

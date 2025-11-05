@@ -47,6 +47,9 @@ export const ENDPOINTS = {
     STATS:{
         DASHBOARD: '/stats/dashboard',
     },
+    UPLOAD: {
+        IMAGE: '/upload/image',
+    },
     CREDENTIALS: {
         INCLUDE: {withCredentials: true}
     }

@@ -32,11 +32,24 @@ export class CartController {
   @AddToCartDocs()
   async addToCart(@Request() req, @Body() addToCartDto: AddToCartDto) {
     const userId = req.user.userId;
-    return this.cartService.addToCart(
+    console.log('🛒 ADD TO CART - Controller received:', {
       userId,
-      addToCartDto.productId,
-      addToCartDto.quantity || 1,
-    );
+      productId: addToCartDto.productId,
+      quantity: addToCartDto.quantity,
+    });
+    
+    try {
+      const result = await this.cartService.addToCart(
+        userId,
+        addToCartDto.productId,
+        addToCartDto.quantity || 1,
+      );
+      console.log('✅ ADD TO CART - Success');
+      return result;
+    } catch (error) {
+      console.error('❌ ADD TO CART - Error:', error.message);
+      throw error;
+    }
   }
 
   @Get()

@@ -72,9 +72,9 @@ export function Header() {
                                 href="/products"
                                 className="text-sm font-medium hover:text-accent transition-colors"
                             >
-                                Products
+                                Produits
                             </Link>
-                            {isAuthenticated && isAdmin && (
+                            {isAuthenticated && (user?.roles?.includes("admin") || user?.roles?.includes("moderator")) && (
                                 <Link
                                     href="/dashboard"
                                     className="text-sm font-medium hover:text-accent transition-colors"

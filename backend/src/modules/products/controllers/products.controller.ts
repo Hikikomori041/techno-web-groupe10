@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Product } from '../schemas/product.schema';
 import { ProductsService } from '../services/products.service';
 import { ProductStatsService } from '../stats/product-stats.service';
+import { AiDescriptionService } from '../ai-description.service';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -25,6 +26,7 @@ export class ProductsController {
   constructor(
     private readonly service: ProductsService,
     private readonly productStatsService: ProductStatsService,
+    private readonly aiDescriptionService: AiDescriptionService,
   ) {}
 
 
@@ -76,6 +78,35 @@ export class ProductsController {
   @CreateProductDocs()
   async create(@Request() req, @Body() product: CreateProductDto) {
     const userId = req.user.userId;
+    
+    console.log('🎯 CONTROLLER - Received product data:', {
+      nom: product.nom,
+      categoryId: product.categoryId,
+      prix: product.prix,
+      specifications: product.specifications?.length || 0,
+    });
+    
+    // Validate categoryId
+    if (!product.categoryId) {
+      console.error('❌ CONTROLLER - No categoryId in request body!');
+      throw new Error('CategoryId is required');
+    }
+    
+    // Generate AI description if no description provided
+    if (!product.description || product.description.trim() === '') {
+      try {
+        const description = await this.aiDescriptionService.generateDescription({
+          nom: product.nom,
+          prix: product.prix,
+          specifications: product.specifications,
+        });
+        product.description = description;
+      } catch (error) {
+        console.error('Error generating AI description:', error);
+        // Continue without description if AI generation fails
+      }
+    }
+    
     const newProduct = await this.service.create(product, userId);
 
     // Crée la fiche de stats associée (même ID) - pour le tracking des ventes seulement
@@ -85,7 +116,31 @@ export class ProductsController {
       nombre_de_vente: 0,
     });
 
+    console.log('🎉 CONTROLLER - Product created successfully with category:', newProduct.categoryId);
     return newProduct;
+  }
+
+  @Post(':id/generate-description')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiOperation({ summary: 'Generate AI description for product', description: 'Generate an AI-powered description for an existing product' })
+  @ApiResponse({ status: 200, description: 'Description generated successfully', schema: { type: 'object', properties: { description: { type: 'string' } } } })
+  async generateDescription(@Param('id') id: string) {
+    const product = await this.service.findOne(id);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+
+    const description = await this.aiDescriptionService.generateDescription({
+      nom: product.nom,
+      prix: product.prix,
+      specifications: product.specifications,
+    });
+
+    // Update product with new description
+    await this.service.update(id, { description }, product.moderatorId?.toString() || '', [Role.ADMIN]);
+
+    return { description };
   }
 
 

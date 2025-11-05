@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "fix-specs": "ts-node src/scripts/fix-specifications.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -26,7 +27,8 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/passport": "^10.0.3",
-    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-express": "^11.1.8",
+    "@nestjs/serve-static": "^5.0.4",
     "@nestjs/swagger": "^8.0.10",
     "@nestjs/typeorm": "^11.0.0",
     "bcryptjs": "^2.4.3",
@@ -54,6 +56,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/mongoose": "^5.11.96",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",

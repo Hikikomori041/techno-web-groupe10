@@ -44,14 +44,18 @@ export class AuthController {
     // ✅ SEULEMENT le JWT dans un cookie httpOnly sécurisé
     res.cookie('access_token', access_token, {
       httpOnly: true,        // Empêche l'accès JavaScript (protection XSS)
-      secure: true,          // ✅ TOUJOURS HTTPS (configure ton reverse proxy en dev si nécessaire)
-      sameSite: 'strict',    // ✅ Protection CSRF renforcée
+      secure: process.env.NODE_ENV === 'production',  // Secure only in production
+      sameSite: 'lax',       // Changed to 'lax' for better OAuth compatibility
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
       path: '/',             // Disponible sur tout le site
     });
 
+    // Redirect to main page (home) after successful Google login
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const redirectUrl = `${frontendUrl}/`; // Redirect to home page
     
-    return res.redirect(`${process.env.REDIRECT_LOGIN_URL}`);
+    console.log('🔐 Google login successful, redirecting to:', redirectUrl);
+    return res.redirect(redirectUrl);
   }
 
   // Email/Password Authentication Routes
@@ -63,8 +67,8 @@ export class AuthController {
 
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: true,          // ✅ TOUJOURS HTTPS
-      sameSite: 'strict',    // ✅ Protection CSRF renforcée
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -87,8 +91,8 @@ export class AuthController {
     // ✅ SEULEMENT le JWT dans un cookie httpOnly sécurisé
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: true,          // ✅ TOUJOURS HTTPS
-      sameSite: 'strict',    // ✅ Protection CSRF renforcée
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -117,8 +121,8 @@ export class AuthController {
   async logout(@Res() res: Response) {
     res.clearCookie('access_token', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       path: '/',
     });
     return res.json({ message: 'Logged out successfully' });

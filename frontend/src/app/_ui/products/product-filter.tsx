@@ -1,14 +1,16 @@
 "use client"
 
-import {useState, useCallback} from "react"
+import {useState, useCallback, useEffect} from "react"
 import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import {Label} from "@/components/ui/label"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Slider} from "@/components/ui/slider"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {X} from "lucide-react"
-import {ProductFilters} from "@/lib/api/definitions";
+import {ProductFilters, Category} from "@/lib/api/definitions"
+import {categoriesService} from "@/lib/api/services/categories.service"
 
 interface FilterPanelProps {
     onChange: (filters: ProductFilters) => void
@@ -27,6 +29,23 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
     const [specs, setSpecs] = useState<{ key: string; value: string }[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [loadingCategories, setLoadingCategories] = useState(true)
+
+    // Fetch categories on mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await categoriesService.getAllCategories()
+                setCategories(data)
+            } catch (error) {
+                console.error("Error fetching categories:", error)
+            } finally {
+                setLoadingCategories(false)
+            }
+        }
+        fetchCategories()
+    }, [])
 
     // Update filter and trigger parent update
     const updateFilter = useCallback(
@@ -71,31 +90,40 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Filters</CardTitle>
+                <CardTitle className="text-lg">Filtres</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Category ID */}
+                {/* Category Dropdown */}
                 <div className="space-y-2">
                     <Label htmlFor="categoryId" className="font-semibold">
-                        Category ID
+                        Catégorie
                     </Label>
-                    <Input
-                        id="categoryId"
-                        placeholder="e.g., 507f1f77bcf86cd799439011"
-                        value={filters.categoryId}
-                        onChange={(e) => updateFilter("categoryId", e.target.value)}
-                        className="w-full"
-                    />
+                    <Select
+                        value={filters.categoryId || "all"}
+                        onValueChange={(value) => updateFilter("categoryId", value === "all" ? "" : value)}
+                    >
+                        <SelectTrigger id="categoryId" className="w-full">
+                            <SelectValue placeholder={loadingCategories ? "Chargement..." : "Toutes les catégories"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Toutes les catégories</SelectItem>
+                            {categories.map((category) => (
+                                <SelectItem key={category._id} value={category._id}>
+                                    {category.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Search */}
                 <div className="space-y-2">
                     <Label htmlFor="search" className="font-semibold">
-                        Search Products
+                        Rechercher
                     </Label>
                     <Input
                         id="search"
-                        placeholder="e.g., laptop, smartphone..."
+                        placeholder="Ex: laptop, smartphone..."
                         value={filters.search}
                         onChange={(e) => updateFilter("search", e.target.value)}
                         className="w-full"
@@ -104,7 +132,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
                 {/* Price Range */}
                 <div className="space-y-3">
-                    <Label className="font-semibold">Price Range</Label>
+                    <Label className="font-semibold">Fourchette de prix</Label>
                     <div className="space-y-4 pt-2">
                         <Slider
                             value={priceRange}
@@ -127,7 +155,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
                 {/* Stock Availability */}
                 <div className="space-y-3">
-                    <Label className="font-semibold">Availability</Label>
+                    <Label className="font-semibold">Disponibilité</Label>
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="inStockOnly"
@@ -135,22 +163,22 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
                             onCheckedChange={(v) => updateFilter("inStockOnly", v === true)}
                         />
                         <Label htmlFor="inStockOnly" className="text-sm font-normal cursor-pointer">
-                            Only show products in stock
+                            Produits en stock uniquement
                         </Label>
                     </div>
                 </div>
 
                 {/* Specifications */}
                 <div className="space-y-3">
-                    <Label className="font-semibold">Specifications</Label>
-                    <p className="text-xs text-muted-foreground">Add custom key-value pairs to filter by
-                        specifications</p>
+                    <Label className="font-semibold">Spécifications</Label>
+                    <p className="text-xs text-muted-foreground">Ajoutez des paires clé-valeur personnalisées pour filtrer par
+                        spécifications</p>
                     <div className="space-y-3">
                         {specs.map((spec, i) => (
                             <div key={i} className="flex gap-2">
                                 <div className="flex-1 space-y-2">
                                     <Input
-                                        placeholder="Key (e.g., RAM)"
+                                        placeholder="Clé (ex: RAM)"
                                         value={spec.key}
                                         onChange={(e) => updateSpecs(i, "key", e.target.value)}
                                         className="w-full"
@@ -158,7 +186,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
                                 </div>
                                 <div className="flex-1 space-y-2">
                                     <Input
-                                        placeholder="Value (e.g., 16GB)"
+                                        placeholder="Valeur (ex: 16GB)"
                                         value={spec.value}
                                         onChange={(e) => updateSpecs(i, "value", e.target.value)}
                                         className="w-full"
@@ -177,13 +205,13 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
                         ))}
                     </div>
                     <Button onClick={addSpec} size="sm" variant="secondary" className="w-full">
-                        + Add Specification
+                        + Ajouter une spécification
                     </Button>
                 </div>
 
                 {/* Clear All Button */}
                 <Button variant="outline" className="w-full bg-transparent" onClick={clearAll}>
-                    Clear All Filters
+                    Effacer tous les filtres
                 </Button>
             </CardContent>
         </Card>

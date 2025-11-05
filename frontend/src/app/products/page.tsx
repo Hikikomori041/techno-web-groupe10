@@ -3,8 +3,9 @@
 import {useEffect, useState, useRef, useCallback} from "react";
 import {Footer} from "@/app/_ui/commun/footer"
 import {ProductGrid} from "@/app/_ui/products/product-grid"
-import {FilterPanel} from "@/app/_ui/products/product-filter"
+import {FilterPanel} from "@/app/_ui/products/product-filter-improved"
 import {Header} from "@/app/_ui/commun/header";
+import {Button} from "@/components/ui/button";
 import {productsService} from "@/lib/api/services/products.service";
 import {Product, ProductFilters} from "@/lib/api/definitions";
 
@@ -14,69 +15,119 @@ export default function Page() {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [initialLoad, setInitialLoad] = useState(true);
     const observerTarget = useRef<HTMLDivElement>(null);
 
-    const fetchProducts = useCallback(
-        async (reset = false) => {
-            if (loading || (!hasMore && !reset)) return;
-            setLoading(true);
+    // Fetch products function
+    const fetchProducts = async (reset: boolean = false) => {
+        if (loading || (!hasMore && !reset)) return;
+        setLoading(true);
 
-            try {
-                const nextPage = reset ? 1 : page;
-                const data = await productsService.filterProducts(nextPage, 12, filters);
-                setProducts((prev) => (reset ? data.products : [...prev, ...data.products]));
-                setHasMore(data.hasMore);
-                setPage(nextPage + 1);
-            } finally {
-                setLoading(false);
-            }
-        },
-        [filters, page, hasMore, loading]
-    );
+        try {
+            const nextPage = reset ? 1 : page;
+            console.log('📡 Fetching products:', { page: nextPage, filters });
+            
+            const data = await productsService.filterProducts(nextPage, 12, filters);
+            
+            setProducts((prev) => (reset ? data.products : [...prev, ...data.products]));
+            setHasMore(data.hasMore);
+            setPage(nextPage + 1);
+            
+            console.log('✅ Products loaded:', { 
+                count: data.products.length, 
+                total: data.total,
+                hasMore: data.hasMore 
+            });
+        } catch (error) {
+            console.error('❌ Error fetching products:', error);
+        } finally {
+            setLoading(false);
+            setInitialLoad(false);
+        }
+    };
 
-    // Fetch on filters change
+    // Fetch on filters change - reset pagination
     useEffect(() => {
+        setProducts([]);
+        setPage(1);
+        setHasMore(true);
         fetchProducts(true);
     }, [filters]);
 
     // Infinite scroll
-    useEffect((): any => {
+    useEffect(() => {
+        if (initialLoad) return; // Skip on initial load
+
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !loading) {
-                    fetchProducts();
+                    fetchProducts(false);
                 }
             },
             {threshold: 0.5}
         );
+        
         const target = observerTarget.current;
         if (target) observer.observe(target);
-        return () => target && observer.unobserve(target);
-    }, [fetchProducts, hasMore, loading]);
+        
+        return () => {
+            if (target) observer.unobserve(target);
+        };
+    }, [hasMore, loading, initialLoad]);
 
     return (
         <div className="min-h-screen flex flex-col">
             <Header/>
             <main className="flex-1 bg-background">
-                <div className="container mx-auto px-4 lg:px-8 py-8">
-                    <div className="mb-8">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-2">All Products</h1>
-                        <p className="text-muted-foreground">Browse our complete collection of tech products</p>
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                    <div className="mb-6 sm:mb-8">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Tous les produits</h1>
+                        <p className="text-sm sm:text-base text-muted-foreground">Parcourez notre collection complète de produits technologiques</p>
                     </div>
 
-                    <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
                         {/* Filter Sidebar */}
-                        <aside className="lg:w-64 flex-shrink-0">
-                            <FilterPanel onChange={setFilters} onClear={() => setFilters({})}/>
+                        <aside className="w-full lg:w-64 flex-shrink-0">
+                            <div className="sticky top-20">
+                                <FilterPanel onChange={setFilters} onClear={() => setFilters({})}/>
+                            </div>
                         </aside>
 
                         {/* Products Grid */}
-                        <div className="flex-1">
-                            <div className="mb-6 flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    {loading && initialLoad ? (
+                                        "Chargement des produits..."
+                                    ) : (
+                                        `${products.length} produit${products.length !== 1 ? 's' : ''} trouvé${products.length !== 1 ? 's' : ''}`
+                                    )}
+                                </p>
                             </div>
-                            <ProductGrid products={products}/>
-                            {loading && <p className="text-center mt-6 text-muted-foreground">Loading...</p>}
-                            {hasMore && <div ref={observerTarget} className="h-12"></div>}
+                            
+                            {products.length === 0 && !loading ? (
+                                <div className="text-center py-16">
+                                    <div className="text-6xl mb-4">🔍</div>
+                                    <h3 className="text-xl font-semibold mb-2">Aucun produit trouvé</h3>
+                                    <p className="text-muted-foreground mb-4">
+                                        Essayez de modifier vos filtres ou votre recherche
+                                    </p>
+                                    <Button variant="outline" onClick={() => setFilters({})}>
+                                        Réinitialiser les filtres
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <ProductGrid products={products}/>
+                                    {loading && <p className="text-center mt-6 text-sm text-muted-foreground">Chargement...</p>}
+                                    {hasMore && !loading && <div ref={observerTarget} className="h-12"></div>}
+                                    {!hasMore && products.length > 0 && (
+                                        <p className="text-center mt-6 text-sm text-muted-foreground">
+                                            ✓ Tous les produits ont été chargés
+                                        </p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

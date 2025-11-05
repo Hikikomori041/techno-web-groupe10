@@ -6,6 +6,7 @@ import { Product, ProductSchema } from './schemas/product.schema';
 import { ProductStatsModule } from './stats/product-stats.module';
 import { AuthModule } from '../auth/auth.module';
 import { CategoriesModule } from '../categories/categories.module';
+import { AiDescriptionService } from './ai-description.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { CategoriesModule } from '../categories/categories.module';
     CategoriesModule,
   ],
   controllers: [ProductsController],
-  providers: [ProductsService],
-  exports: [ProductsService, MongooseModule],
+  providers: [ProductsService, AiDescriptionService],
+  exports: [ProductsService, AiDescriptionService, MongooseModule],
 })
 export class ProductsModule {}

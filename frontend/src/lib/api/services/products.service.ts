@@ -30,8 +30,34 @@ export const productsService = {
         const params: Record<string, any> = {
             page,
             limit,
-            ...filters, // spread optional filter fields
         };
+
+        // Add filters only if they have values
+        if (filters?.categoryId) {
+            params.categoryId = filters.categoryId;
+        }
+
+        if (filters?.search && filters.search.trim()) {
+            params.search = filters.search.trim();
+        }
+
+        if (filters?.minPrice !== undefined && filters.minPrice > 0) {
+            params.minPrice = filters.minPrice;
+        }
+
+        if (filters?.maxPrice !== undefined && filters.maxPrice < 5000) {
+            params.maxPrice = filters.maxPrice;
+        }
+
+        if (filters?.inStockOnly) {
+            params.inStockOnly = filters.inStockOnly;
+        }
+
+        // Convert specifications object to JSON string for the backend
+        if (filters?.specifications && Object.keys(filters.specifications).length > 0) {
+            params.specifications = JSON.stringify(filters.specifications);
+        }
+
         const res = await apiClient.get(ENDPOINTS.PRODUCTS.ALL, {params})
         return res.data;
     },

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { ProductsModule } from './modules/products/products.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -7,6 +9,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -30,6 +33,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
       inject: [ConfigService],
     }),
+    // Serve static files from uploads directory
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     ProductsModule,
     AuthModule,
     UsersModule,
@@ -37,6 +45,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     OrdersModule,
     StatsModule,
     CategoriesModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

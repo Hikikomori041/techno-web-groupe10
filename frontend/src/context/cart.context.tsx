@@ -156,9 +156,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     // Add item to cart
     const addItemToCart = async (productId: string, quantity: number = 1) => {
         try {
+            console.log('🛒 Frontend addItemToCart:', { productId, quantity, isAuthenticated });
+            
             if (isAuthenticated) {
                 // Add to backend
+                console.log('📡 Calling backend addToCart...');
                 await cartService.addToCart(productId, quantity);
+                console.log('✅ Backend call successful, reloading cart...');
                 await loadCartFromBackend();
                 toast.success("Item added to cart");
             } else {
@@ -213,9 +217,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 toast.success("Item added to cart");
                 toast.info("Sign in to save your cart", { duration: 3000 });
             }
-        } catch (error) {
-            console.error("Error adding item to cart:", error);
-            toast.error("Failed to add item to cart");
+        } catch (error: any) {
+            console.error("❌ Error adding item to cart:", error);
+            console.error("Error details:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            const errorMessage = error.response?.data?.message || error.message || "Failed to add item to cart";
+            toast.error(errorMessage);
         }
     };
 

@@ -66,9 +66,12 @@ export class OrdersService {
         subtotal: cartItem.subtotal,
       });
 
-      // Reduce stock
-      product.quantite_en_stock -= cartItem.quantity;
-      await product.save();
+      // Reduce stock - Use findByIdAndUpdate to avoid validation issues with existing bad data
+      await this.productModel.findByIdAndUpdate(
+        product._id,
+        { $inc: { quantite_en_stock: -cartItem.quantity } },
+        { new: true, runValidators: false } // Skip validators to avoid issues with bad existing data
+      );
     }
 
     // 3. Create order
@@ -277,13 +280,13 @@ export class OrdersService {
       throw new BadRequestException('Cette commande est déjà annulée');
     }
 
-    // Restore stock for all items
+    // Restore stock for all items - Use findByIdAndUpdate to avoid validation issues
     for (const item of order.items) {
-      const product = await this.productsService.findOne(item.productId.toString());
-      if (product) {
-        product.quantite_en_stock += item.quantity;
-        await product.save();
-      }
+      await this.productModel.findByIdAndUpdate(
+        item.productId,
+        { $inc: { quantite_en_stock: item.quantity } },
+        { runValidators: false } // Skip validators to avoid issues with bad existing data
+      );
     }
 
     // Update order status

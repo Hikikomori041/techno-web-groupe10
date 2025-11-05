@@ -28,6 +28,17 @@ export class ProductsService {
       specifications,
     } = filterDto;
 
+    console.log('🔍 Filter Products Request:', {
+      categoryId,
+      search,
+      minPrice,
+      maxPrice,
+      inStockOnly,
+      page,
+      limit,
+      specifications,
+    });
+
     // Build query filter
     const filter: any = {};
 
@@ -57,17 +68,24 @@ export class ProductsService {
       filter.quantite_en_stock = { $gt: 0 };
     }
 
-    // Specifications filter
+    // Specifications filter - improved to handle multiple specs
     if (specifications) {
       try {
         const specsFilter = JSON.parse(specifications);
         const specsArray = Object.entries(specsFilter).map(([key, value]) => ({
-          specifications: {
-            $elemMatch: { key, value },
+          'specifications': {
+            $elemMatch: { 
+              key: { $regex: new RegExp(`^${key}$`, 'i') }, // Case-insensitive exact match
+              value: { $regex: new RegExp(value as string, 'i') } // Case-insensitive partial match
+            },
           },
         }));
         if (specsArray.length > 0) {
-          filter.$and = specsArray;
+          if (filter.$and) {
+            filter.$and.push(...specsArray);
+          } else {
+            filter.$and = specsArray;
+          }
         }
       } catch (error) {
         console.error('Failed to parse specifications filter:', error);
@@ -92,6 +110,15 @@ export class ProductsService {
 
     const totalPages = Math.ceil(total / limit);
     const hasMore = page < totalPages;
+
+    console.log('✅ Filter Results:', {
+      totalProducts: total,
+      returnedProducts: products.length,
+      page,
+      totalPages,
+      hasMore,
+      appliedFilter: JSON.stringify(filter),
+    });
 
     return {
       products,
@@ -140,27 +167,73 @@ export class ProductsService {
   }
 
   async create(productDto: CreateProductDto, userId: string): Promise<Product> {
+    console.log('📦 Creating product with categoryId:', productDto.categoryId);
+    
+    // Validate categoryId
+    if (!productDto.categoryId || productDto.categoryId === 'none' || productDto.categoryId === 'placeholder') {
+      throw new Error('Invalid categoryId provided');
+    }
+
+    // Sanitize specifications to ensure correct format
+    const sanitizedSpecs = this.sanitizeSpecifications(productDto.specifications);
+
     const newProduct = new this.productModel({
       nom: productDto.nom,
       prix: productDto.prix,
       description: productDto.description,
       images: productDto.images,
-      specifications: productDto.specifications || [],
+      specifications: sanitizedSpecs,
       categoryId: new Types.ObjectId(productDto.categoryId),
       moderatorId: new Types.ObjectId(userId),
       quantite_en_stock: productDto.quantite_en_stock || 0,
     });
+    
+    console.log('💾 Saving product with categoryId:', newProduct.categoryId);
     await newProduct.save();
     
     // Return with populated references
-    return this.productModel
+    const savedProduct = await this.productModel
       .findById(newProduct._id)
       .populate('categoryId', 'name description')
       .populate('moderatorId', 'firstName lastName email')
-      .exec() as Promise<Product>;
+      .exec();
+    
+    if (!savedProduct) {
+      throw new Error('Failed to retrieve saved product');
+    }
+    
+    console.log('✅ Product created with category:', savedProduct.categoryId);
+    console.log('✅ Full product data:', JSON.stringify(savedProduct, null, 2));
+    
+    return savedProduct;
+  }
+
+  /**
+   * Sanitize specifications to ensure they are in the correct format
+   * Prevents nested objects in the value field
+   */
+  private sanitizeSpecifications(specs?: Array<{ key: string; value: string }>): Array<{ key: string; value: string }> {
+    if (!specs || !Array.isArray(specs)) {
+      return [];
+    }
+
+    return specs.map(spec => {
+      // If value is an object, extract the actual value
+      let value = spec.value;
+      if (typeof value === 'object' && value !== null) {
+        value = (value as any).value || String(value);
+      }
+      
+      return {
+        key: String(spec.key),
+        value: String(value),
+      };
+    });
   }
 
   async update(id: string, productDto: UpdateProductDto, userId: string, userRoles: string[]): Promise<Product | null> {
+    console.log('✏️ Updating product with data:', { id, categoryId: productDto.categoryId, ...productDto });
+    
     const existingProduct = await this.productModel.findById(id).exec();
     if (!existingProduct) {
       throw new NotFoundException(`Produit avec l'id ${id} introuvable`);
@@ -185,15 +258,21 @@ export class ProductsService {
     if (productDto.prix !== undefined) updateData.prix = productDto.prix;
     if (productDto.description !== undefined) updateData.description = productDto.description;
     if (productDto.images !== undefined) updateData.images = productDto.images;
-    if (productDto.specifications !== undefined) updateData.specifications = productDto.specifications;
-    if (productDto.categoryId !== undefined) updateData.categoryId = new Types.ObjectId(productDto.categoryId);
+    if (productDto.specifications !== undefined) updateData.specifications = this.sanitizeSpecifications(productDto.specifications);
+    if (productDto.categoryId !== undefined && productDto.categoryId !== 'none' && productDto.categoryId !== 'placeholder') {
+      updateData.categoryId = new Types.ObjectId(productDto.categoryId);
+      console.log('💾 Updating categoryId to:', updateData.categoryId);
+    }
     if (productDto.quantite_en_stock !== undefined) updateData.quantite_en_stock = productDto.quantite_en_stock;
 
-    return this.productModel
+    const updated = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .populate('categoryId', 'name description')
       .populate('moderatorId', 'firstName lastName email')
       .exec();
+    
+    console.log('✅ Product updated, categoryId:', updated?.categoryId);
+    return updated;
   }
 
   async remove(id: string, userId: string, userRoles: string[]): Promise<Product | null> {

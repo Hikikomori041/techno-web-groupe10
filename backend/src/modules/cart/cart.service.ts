@@ -12,10 +12,24 @@ export class CartService {
   ) {}
 
   async addToCart(userId: string, productId: string, quantity: number = 1) {
+    console.log('🛒 CartService.addToCart called:', { userId, productId, quantity });
+    
     // Validate product exists
     const product = await this.productsService.findOne(productId);
     if (!product) {
+      console.error('❌ Product not found:', productId);
       throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+    
+    console.log('✅ Product found:', product.nom);
+
+    // Check stock
+    if (product.quantite_en_stock < quantity) {
+      console.error('❌ Insufficient stock:', {
+        available: product.quantite_en_stock,
+        requested: quantity,
+      });
+      throw new BadRequestException(`Insufficient stock. Only ${product.quantite_en_stock} available`);
     }
 
     // Check if item already exists in cart
@@ -25,17 +39,22 @@ export class CartService {
     });
 
     if (existingItem) {
+      console.log('📦 Item already in cart, updating quantity');
       // Update quantity by adding to existing
       existingItem.quantity += quantity;
       await existingItem.save();
       
       // Populate and return
-      return this.cartModel
+      const result = await this.cartModel
         .findById(existingItem._id)
         .populate('productId')
         .exec();
+      
+      console.log('✅ Cart updated successfully');
+      return result;
     }
 
+    console.log('🆕 Creating new cart item');
     // Create new cart item
     const cartItem = new this.cartModel({
       userId: new Types.ObjectId(userId),
@@ -44,12 +63,16 @@ export class CartService {
     });
 
     await cartItem.save();
+    console.log('💾 Cart item saved');
     
     // Populate and return
-    return this.cartModel
+    const result = await this.cartModel
       .findById(cartItem._id)
       .populate('productId')
       .exec();
+    
+    console.log('✅ Cart item created successfully');
+    return result;
   }
 
   async getCart(userId: string) {

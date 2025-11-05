@@ -47,8 +47,16 @@ export default function ProductManagementPage() {
             }
 
             const fetchedProducts = await productsService.getAllProductsDashboard()
+            console.log('📦 Fetched products:', fetchedProducts.map(p => ({
+                nom: p.nom,
+                id_categorie: p.id_categorie,
+                categoryId: (p as any).categoryId
+            })))
+            
             setProducts(fetchedProducts)
+            
             const fetchedCategories = await categoriesService.getAllCategories()
+            console.log('📂 Fetched categories:', fetchedCategories.map(c => ({ _id: c._id, name: c.name })))
             setCategories(fetchedCategories)
         } catch (error) {
             console.error("Error fetching data:", error)
@@ -69,34 +77,28 @@ export default function ProductManagementPage() {
     }, [categories])
 
     const getCategoryName = (categoryId: string) => {
-        return categoryMap.get(categoryId) || "Unknown"
+        if (!categoryId) {
+            console.log('⚠️ No categoryId provided')
+            return "No Category"
+        }
+        const name = categoryMap.get(categoryId)
+        if (!name) {
+            console.log('⚠️ Category not found in map:', { 
+                categoryId, 
+                availableCategories: Array.from(categoryMap.keys()) 
+            })
+        }
+        return name || "Unknown"
     }
 
     const handleAdd = () => {
-        setEditForm({
-            nom: "",
-            prix: 0,
-            description: "",
-            images: [],
-            specifications: [],
-            categoryId: "",
-            quantite_en_stock: 0,
-        })
-        setIsAddDialogOpen(true)
+        // Redirect to dedicated add page
+        router.push("/dashboard/products/add")
     }
 
     const handleEdit = (product: Product) => {
-        setSelectedProduct(product)
-        setEditForm({
-            nom: product.nom,
-            prix: product.prix,
-            description: product.description,
-            images: product.images,
-            specifications: product.specifications,
-            categoryId: product.id_categorie,
-            quantite_en_stock: product.quantite_en_stock,
-        })
-        setIsEditDialogOpen(true)
+        // Redirect to dedicated edit page
+        router.push(`/dashboard/products/edit/${product._id}`)
     }
 
     const handleDelete = (product: Product) => {
@@ -233,9 +235,6 @@ export default function ProductManagementPage() {
                                                         <div className="flex items-center gap-3">
                                                             <div>
                                                                 <p className="font-medium">{product.nom}</p>
-                                                                {product.description && (
-                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -654,9 +653,6 @@ export default function ProductManagementPage() {
                                                         <div className="flex items-center gap-3">
                                                             <div>
                                                                 <p className="font-medium">{product.nom}</p>
-                                                                {product.description && (
-                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -1228,9 +1224,6 @@ export default function ProductManagementPage() {
                                                         <div className="flex items-center gap-3">
                                                             <div>
                                                                 <p className="font-medium">{product.nom}</p>
-                                                                {product.description && (
-                                                                    <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     </TableCell>
