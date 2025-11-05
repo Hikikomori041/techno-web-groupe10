@@ -21,8 +21,6 @@ Projet du groupe 10 (trinôme) du cours de M2 Technologies Web
 - [Tests](#tests)
 - [Captures d'écran](#captures-décran)
 - [Licence](#licence)
-- [Support](#support)
-
 
 ## Aperçu du projet
 
@@ -411,15 +409,11 @@ npm run test
 
 Ce projet est développé dans le cadre d'un cours universitaire.
 
-## Support
-
-Pour toute question ou problème:
-1. Consulter la documentation dans `/docs`
-
 ---
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
