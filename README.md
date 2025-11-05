@@ -209,7 +209,7 @@ PORT=3000
 NODE_ENV=development
 ```
 
-Pour trouver le `.env` fourni permettant l'accès à la base de données, veuillez consulter la [documentation Google Docs du projet](https://docs.google.com/document/d/13JVKV1lKW8zDC-Kk7DVPhG77et6-_0Df9Axdd_pTrQs/edit?usp=sharing).
+Pour trouver le `.env` fourni permettant l'accès à la base de données, veuillez consulter la [documentation Google Docs du projet](https://docs.google.com/document/d/13JVKV1lKW8zDC-Kk7DVPhG77et6-_0Df9Axdd_pTrQs/edit?tab=t.0#heading=h.vlm1ci9y8wmj).
 
 
 Lancer le backend:
@@ -385,6 +385,7 @@ Pour toute question ou problème:
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
