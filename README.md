@@ -50,14 +50,21 @@ L'administrateur gère toute la base, des produits aux utilisateurs. Il possède
     - Connexion
     - Création de compte
     - Produits
-        - Accueil - présentation de catégorie, carousel, nouveautés et tendance
+        - Accueil
         - Recherche de produits (tri & filtres)
         - Page d'un produit (détails)
+        - Ajout d'un produit au panier
 - Utilisateur
-    - Modification données compte
+    - Visualisation des informations de compte
+    - Panier (validation d'une commande)
+- Vendeur
+    - Gestion des produits (création, modification, suppression)
 - Administrateur
-    - Gestion des utilisateurs (table)
-    - Gestion des produits (table aussi)
+    - Dashboard
+        - Gestion des catégories
+        - Gestion des produits
+        - Gestion des commandes
+        - Gestion des utilisateurs
 
 ## Fonctionnalité bonus
 Lors de la création d'une produit, un modérateur peut faire générer sa description par IA, selon le nom du produit.
@@ -409,6 +416,7 @@ Ce projet est développé dans le cadre d'un cours universitaire.
 
 **Dernière mise à jour**: Novembre 2025
 **Version**: 1.0.0
+
 
 
 
