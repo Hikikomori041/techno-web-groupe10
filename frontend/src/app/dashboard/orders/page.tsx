@@ -24,6 +24,8 @@ import {User} from "@/lib/api/definitions"
 import {authService} from "@/lib/api/services/auth.service";
 import type {Order} from "@/lib/api/definitions"
 import {ordersService} from "@/lib/api/services/orders.service";
+import {toast} from "sonner";
+import {debugLog} from "@/lib/utils";
 
 
 const getStatusConfig = (status: string) => {
@@ -100,25 +102,47 @@ export default function AdminOrdersPage() {
         }
     }
 
-    const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    const getOrderId = (order: Order): string => {
+        return order._id ? String(order._id) : (order.id ? String(order.id) : '');
+    }
+
+    const handleUpdateStatus = async (order: Order, newStatus: string) => {
+        const orderId = getOrderId(order);
+        if (!orderId) {
+            toast.error("Invalid order ID")
+            return;
+        }
         try {
             setUpdatingOrder(orderId)
+            debugLog("Updating order status", { orderId, newStatus })
             await ordersService.updateOrderStatus(orderId, newStatus)
+            toast.success("Order status updated successfully")
             await fetchOrders()
         } catch (err: any) {
-            alert(err.message || "Failed to update status")
+            debugLog("Error updating order status:", err)
+            const errorMessage = err.response?.data?.message || err.message || "Failed to update order status"
+            toast.error(errorMessage)
         } finally {
             setUpdatingOrder(null)
         }
     }
 
-    const handleUpdatePayment = async (orderId: string, newPaymentStatus: string) => {
+    const handleUpdatePayment = async (order: Order, newPaymentStatus: string) => {
+        const orderId = getOrderId(order);
+        if (!orderId) {
+            toast.error("Invalid order ID")
+            return;
+        }
         try {
             setUpdatingOrder(orderId)
+            debugLog("Updating payment status", { orderId, newPaymentStatus })
             await ordersService.updatePaymentStatus(orderId, newPaymentStatus)
+            toast.success("Payment status updated successfully")
             await fetchOrders()
         } catch (err: any) {
-            alert(err.message || "Failed to update payment status")
+            debugLog("Error updating payment status:", err)
+            const errorMessage = err.response?.data?.message || err.message || "Failed to update payment status"
+            toast.error(errorMessage)
         } finally {
             setUpdatingOrder(null)
         }
@@ -141,7 +165,22 @@ export default function AdminOrdersPage() {
         })
     }
 
-    const filteredOrders = filterStatus === "all" ? orders : orders.filter((order) => order.status === filterStatus)
+    // Deduplicate orders by _id or id to ensure unique keys
+    const uniqueOrders = orders.reduce((acc, order) => {
+        const orderId = order._id ? String(order._id) : (order.id ? String(order.id) : null);
+        if (orderId && !acc.seen.has(orderId)) {
+            acc.seen.add(orderId);
+            acc.unique.push(order);
+        } else if (!orderId) {
+            // If no ID, include it anyway (shouldn't happen, but handle gracefully)
+            acc.unique.push(order);
+        }
+        return acc;
+    }, { seen: new Set<string>(), unique: [] as Order[] });
+
+    const filteredOrders = filterStatus === "all" 
+        ? uniqueOrders.unique 
+        : uniqueOrders.unique.filter((order) => order.status === filterStatus)
 
     const ordersByStatus = {
         pending: orders.filter((o) => o.status === "pending"),
@@ -316,13 +355,15 @@ export default function AdminOrdersPage() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            filteredOrders.map((order) => {
+                            filteredOrders.map((order, index) => {
                                 const statusConfig = getStatusConfig(order.status)
                                 const paymentConfig = getPaymentConfig(order.paymentStatus)
                                 const StatusIcon = statusConfig.icon
+                                // Ensure unique key - use _id, id, or fallback to index
+                                const orderKey = order._id ? String(order._id) : (order.id ? String(order.id) : `order-${index}`)
 
                                 return (
-                                    <Card key={order._id} className="hover:shadow-lg transition-shadow">
+                                    <Card key={orderKey} className="hover:shadow-lg transition-shadow">
                                         <CardContent className="p-6">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
@@ -346,8 +387,8 @@ export default function AdminOrdersPage() {
                                                         Status</label>
                                                     <Select
                                                         value={order.status}
-                                                        onValueChange={(value) => handleUpdateStatus(order._id, value)}
-                                                        disabled={updatingOrder === order._id}
+                                                        onValueChange={(value) => handleUpdateStatus(order, value)}
+                                                        disabled={updatingOrder === getOrderId(order)}
                                                     >
                                                         <SelectTrigger>
                                                             <SelectValue/>
@@ -369,8 +410,8 @@ export default function AdminOrdersPage() {
                                                         Status</label>
                                                     <Select
                                                         value={order.paymentStatus}
-                                                        onValueChange={(value) => handleUpdatePayment(order._id, value)}
-                                                        disabled={updatingOrder === order._id}
+                                                        onValueChange={(value) => handleUpdatePayment(order, value)}
+                                                        disabled={updatingOrder === getOrderId(order)}
                                                     >
                                                         <SelectTrigger>
                                                             <SelectValue/>
@@ -391,7 +432,7 @@ export default function AdminOrdersPage() {
                                                     <MapPin className="h-4 w-4"/>
                                                     {order.shippingAddress.city}, {order.shippingAddress.country}
                                                 </div>
-                                                <Button onClick={() => router.push(`/dashboard/orders/${order._id}`)}>View
+                                                <Button onClick={() => router.push(`/dashboard/orders/${getOrderId(order)}`)}>View
                                                     Details</Button>
                                             </div>
                                         </CardContent>
@@ -428,12 +469,14 @@ export default function AdminOrdersPage() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            filteredOrders.map((order) => {
+                                            filteredOrders.map((order, index) => {
                                                 const statusConfig = getStatusConfig(order.status)
                                                 const paymentConfig = getPaymentConfig(order.paymentStatus)
+                                                // Ensure unique key - use _id, id, or fallback to index
+                                                const orderKey = order._id ? String(order._id) : (order.id ? String(order.id) : `order-${index}`)
 
                                                 return (
-                                                    <TableRow key={order._id} className="hover:bg-muted/50">
+                                                    <TableRow key={orderKey} className="hover:bg-muted/50">
                                                         <TableCell>
                                                             <div
                                                                 className="text-sm font-mono font-medium text-foreground">{order.orderNumber}</div>
@@ -458,8 +501,8 @@ export default function AdminOrdersPage() {
                                                         <TableCell>
                                                             <Select
                                                                 value={order.status}
-                                                                onValueChange={(value) => handleUpdateStatus(order._id, value)}
-                                                                disabled={updatingOrder === order._id}
+                                                                onValueChange={(value) => handleUpdateStatus(order, value)}
+                                                                disabled={updatingOrder === getOrderId(order)}
                                                             >
                                                                 <SelectTrigger className="w-[180px]">
                                                                     <SelectValue/>
@@ -479,8 +522,8 @@ export default function AdminOrdersPage() {
                                                         <TableCell>
                                                             <Select
                                                                 value={order.paymentStatus}
-                                                                onValueChange={(value) => handleUpdatePayment(order._id, value)}
-                                                                disabled={updatingOrder === order._id}
+                                                                onValueChange={(value) => handleUpdatePayment(order, value)}
+                                                                disabled={updatingOrder === getOrderId(order)}
                                                             >
                                                                 <SelectTrigger className="w-[140px]">
                                                                     <SelectValue/>
@@ -496,7 +539,7 @@ export default function AdminOrdersPage() {
                                                         <TableCell className="text-right">
                                                             <Button
                                                                 variant="link"
-                                                                onClick={() => router.push(`/dashboard/orders/${order._id}`)}
+                                                                onClick={() => router.push(`/dashboard/orders/${getOrderId(order)}`)}
                                                                 className="text-primary"
                                                             >
                                                                 View

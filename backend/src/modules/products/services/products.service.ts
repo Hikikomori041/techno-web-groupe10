@@ -1,34 +1,30 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product } from '../schemas/product.schema';
 import { ProductStatsService } from '../stats/product-stats.service';
 import { Role } from '../../../common/enums/role.enum';
-import { FilterProductsDto } from '../dto/filter-products.dto';
-import { CreateProductDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
+import {
+  ProductCreateInput,
+  ProductFilterInput,
+  ProductSpecificationInput,
+  ProductUpdateInput,
+} from '../types/product.types';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
   // constructor(@InjectModel(Product.name) private productModel: Model<Product>) {}
   constructor(
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
     private readonly productStatsService: ProductStatsService, // 👈 injection du service
   ) {}
 
-  async findAllWithFilters(filterDto: FilterProductsDto) {
-    const {
-      categoryId,
-      search,
-      minPrice,
-      maxPrice,
-      inStockOnly,
-      page = 1,
-      limit = 12,
-      specifications,
-    } = filterDto;
+  async findAllWithFilters(filters: ProductFilterInput) {
+    const { categoryId, search, minPrice, maxPrice, inStockOnly, page, limit, specifications } =
+      filters;
 
-    console.log('🔍 Filter Products Request:', {
+    this.logger.debug('Filter products request', {
       categoryId,
       search,
       minPrice,
@@ -44,7 +40,18 @@ export class ProductsService {
 
     // Category filter
     if (categoryId) {
-      filter.categoryId = new Types.ObjectId(categoryId);
+      try {
+        // Validate ObjectId format before using it
+        if (!Types.ObjectId.isValid(categoryId)) {
+          this.logger.warn(`Invalid categoryId format: ${categoryId}`);
+        } else {
+          filter.categoryId = new Types.ObjectId(categoryId);
+          this.logger.debug(`Category filter applied: ${categoryId}`);
+        }
+      } catch (error) {
+        this.logger.error(`Error processing categoryId filter: ${error.message}`);
+        // Don't apply filter if there's an error
+      }
     }
 
     // Search by product name (case-insensitive partial match)
@@ -70,25 +77,20 @@ export class ProductsService {
 
     // Specifications filter - improved to handle multiple specs
     if (specifications) {
-      try {
-        const specsFilter = JSON.parse(specifications);
-        const specsArray = Object.entries(specsFilter).map(([key, value]) => ({
-          'specifications': {
-            $elemMatch: { 
-              key: { $regex: new RegExp(`^${key}$`, 'i') }, // Case-insensitive exact match
-              value: { $regex: new RegExp(value as string, 'i') } // Case-insensitive partial match
-            },
+      const specsArray = Object.entries(specifications).map(([key, value]) => ({
+        specifications: {
+          $elemMatch: {
+            key: { $regex: new RegExp(`^${key}$`, 'i') },
+            value: { $regex: new RegExp(value, 'i') },
           },
-        }));
-        if (specsArray.length > 0) {
-          if (filter.$and) {
-            filter.$and.push(...specsArray);
-          } else {
-            filter.$and = specsArray;
-          }
+        },
+      }));
+      if (specsArray.length > 0) {
+        if (filter.$and) {
+          filter.$and.push(...specsArray);
+        } else {
+          filter.$and = specsArray;
         }
-      } catch (error) {
-        console.error('Failed to parse specifications filter:', error);
       }
     }
 
@@ -111,7 +113,7 @@ export class ProductsService {
     const totalPages = Math.ceil(total / limit);
     const hasMore = page < totalPages;
 
-    console.log('✅ Filter Results:', {
+    this.logger.debug('Filter results', {
       totalProducts: total,
       returnedProducts: products.length,
       page,
@@ -142,7 +144,7 @@ export class ProductsService {
       ? { moderatorId: new Types.ObjectId(userId) }
       : {};
     
-    console.log('🔍 Products Filter Debug:', {
+    this.logger.debug('Products filter applied', {
       userId,
       userRoles,
       isAdmin,
@@ -166,11 +168,18 @@ export class ProductsService {
       .exec();
   }
 
-  async create(productDto: CreateProductDto, userId: string): Promise<Product> {
-    console.log('📦 Creating product with categoryId:', productDto.categoryId);
+  async create(productDto: ProductCreateInput): Promise<Product> {
+    this.logger.debug(`Creating product`, {
+      categoryId: productDto.categoryId,
+      moderatorId: productDto.moderatorId,
+    });
     
     // Validate categoryId
-    if (!productDto.categoryId || productDto.categoryId === 'none' || productDto.categoryId === 'placeholder') {
+    if (
+      !productDto.categoryId ||
+      productDto.categoryId === 'none' ||
+      productDto.categoryId === 'placeholder'
+    ) {
       throw new Error('Invalid categoryId provided');
     }
 
@@ -184,11 +193,11 @@ export class ProductsService {
       images: productDto.images,
       specifications: sanitizedSpecs,
       categoryId: new Types.ObjectId(productDto.categoryId),
-      moderatorId: new Types.ObjectId(userId),
+      moderatorId: new Types.ObjectId(productDto.moderatorId),
       quantite_en_stock: productDto.quantite_en_stock || 0,
     });
     
-    console.log('💾 Saving product with categoryId:', newProduct.categoryId);
+    this.logger.debug(`Saving product with categoryId ${newProduct.categoryId}`);
     await newProduct.save();
     
     // Return with populated references
@@ -202,8 +211,7 @@ export class ProductsService {
       throw new Error('Failed to retrieve saved product');
     }
     
-    console.log('✅ Product created with category:', savedProduct.categoryId);
-    console.log('✅ Full product data:', JSON.stringify(savedProduct, null, 2));
+    this.logger.debug(`Product created with category ${savedProduct.categoryId}`);
     
     return savedProduct;
   }
@@ -212,7 +220,9 @@ export class ProductsService {
    * Sanitize specifications to ensure they are in the correct format
    * Prevents nested objects in the value field
    */
-  private sanitizeSpecifications(specs?: Array<{ key: string; value: string }>): Array<{ key: string; value: string }> {
+  private sanitizeSpecifications(
+    specs?: ProductSpecificationInput[],
+  ): ProductSpecificationInput[] {
     if (!specs || !Array.isArray(specs)) {
       return [];
     }
@@ -231,8 +241,13 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, productDto: UpdateProductDto, userId: string, userRoles: string[]): Promise<Product | null> {
-    console.log('✏️ Updating product with data:', { id, categoryId: productDto.categoryId, ...productDto });
+  async update(
+    id: string,
+    productDto: ProductUpdateInput,
+    userId: string,
+    userRoles: string[],
+  ): Promise<Product | null> {
+    this.logger.debug('Updating product', { id, categoryId: productDto.categoryId });
     
     const existingProduct = await this.productModel.findById(id).exec();
     if (!existingProduct) {
@@ -258,10 +273,16 @@ export class ProductsService {
     if (productDto.prix !== undefined) updateData.prix = productDto.prix;
     if (productDto.description !== undefined) updateData.description = productDto.description;
     if (productDto.images !== undefined) updateData.images = productDto.images;
-    if (productDto.specifications !== undefined) updateData.specifications = this.sanitizeSpecifications(productDto.specifications);
-    if (productDto.categoryId !== undefined && productDto.categoryId !== 'none' && productDto.categoryId !== 'placeholder') {
+    if (productDto.specifications !== undefined) {
+      updateData.specifications = this.sanitizeSpecifications(productDto.specifications);
+    }
+    if (
+      productDto.categoryId !== undefined &&
+      productDto.categoryId !== 'none' &&
+      productDto.categoryId !== 'placeholder'
+    ) {
       updateData.categoryId = new Types.ObjectId(productDto.categoryId);
-      console.log('💾 Updating categoryId to:', updateData.categoryId);
+      this.logger.debug(`Updating categoryId to ${updateData.categoryId}`);
     }
     if (productDto.quantite_en_stock !== undefined) updateData.quantite_en_stock = productDto.quantite_en_stock;
 
@@ -271,7 +292,7 @@ export class ProductsService {
       .populate('moderatorId', 'firstName lastName email')
       .exec();
     
-    console.log('✅ Product updated, categoryId:', updated?.categoryId);
+    this.logger.debug(`Product updated`, { id, categoryId: updated?.categoryId });
     return updated;
   }
 

@@ -11,6 +11,7 @@ import {Separator} from "@/components/ui/separator"
 import {ArrowLeft, Loader2, AlertTriangle, Package, CheckCircle2} from "lucide-react"
 import {authService} from "@/lib/api/services/auth.service";
 import {toast} from "sonner";
+import { debugLog } from "@/lib/utils";
 
 const statusLabels = {
     pending: "Pending",
@@ -41,45 +42,79 @@ export default function DashboardOrderDetailPage() {
     useEffect(() => {
         if (orderId) {
             fetchOrder()
+        } else {
+            setError("Order ID is missing")
+            setLoading(false)
         }
     }, [orderId])
 
     const fetchOrder = async () => {
+        if (!orderId) {
+            setError("Order ID is missing")
+            setLoading(false)
+            return
+        }
+
         try {
             setLoading(true)
+            setError(null)
 
             const check = await authService.isAuthenticated()
-            if (!check.authenticated && !check.user) {
-                router.push('/login')
+            if (!check.authenticated || !check.user) {
+                router.push('/sign-in')
                 return
             }
-            if (!check.user?.roles.includes("admin")) {
+            const hasAccess = check.user.roles.includes("admin") || check.user.roles.includes("moderator")
+            if (!hasAccess) {
                 router.push('/unauthorized')
                 return
             }
 
+            debugLog("Fetching order with ID:", orderId)
             const orderData = await ordersService.getOrderById(orderId)
-            setOrder(orderData)
-            console.log(orderData)
-
-            setLoading(false)
+            debugLog("Dashboard order loaded", orderData)
+            
+            if (!orderData) {
+                setError("Order not found")
+                toast.error("Order not found")
+            } else {
+                setOrder(orderData)
+            }
         } catch (err: any) {
-            setError(err.message || "Failed to load order")
+            debugLog("Error fetching order:", err)
+            const errorMessage = err.response?.data?.message || err.message || "Failed to load order"
+            setError(errorMessage)
+            toast.error(errorMessage)
         } finally {
             setLoading(false)
         }
+    }
+
+    const getOrderId = (order: Order | null): string => {
+        if (!order) return orderId || '';
+        return order._id ? String(order._id) : (order.id ? String(order.id) : orderId || '');
     }
 
     const handleCancelOrder = async () => {
         if (!confirm("Are you sure you want to cancel this order?")) {
             return
         }
+        const cancelOrderId = getOrderId(order);
+        if (!cancelOrderId) {
+            toast.error("Invalid order ID")
+            return
+        }
         try {
             setCancelling(true)
-            await ordersService.cancelOrder(orderId)
-            toast.info("Order cancelled successfully")
+            debugLog("Cancelling order:", cancelOrderId)
+            await ordersService.cancelOrder(cancelOrderId)
+            toast.success("Order cancelled successfully")
+            // Refresh order data
+            await fetchOrder()
         } catch (err: any) {
-            toast.error(err.message || "Failed to cancel order")
+            debugLog("Error cancelling order:", err)
+            const errorMessage = err.response?.data?.message || err.message || "Failed to cancel order"
+            toast.error(errorMessage)
         } finally {
             setCancelling(false)
         }
@@ -208,22 +243,27 @@ export default function DashboardOrderDetailPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {order.items.map((item, index) => (
-                                    <div key={index}>
-                                        <div className="flex items-center gap-4">
-                                            <Package className="h-10 w-10 text-muted-foreground"/>
-                                            <div className="flex-1">
-                                                <h3 className="font-medium">Product #{item.productId}</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Quantity: {item.quantity} × {formatPrice(item.productPrice)}
-                                                </p>
+                                {order.items && order.items.length > 0 ? (
+                                    order.items.map((item, index) => (
+                                        <div key={index}>
+                                            <div className="flex items-center gap-4">
+                                                <Package className="h-10 w-10 text-muted-foreground"/>
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium">{item.productName || `Product #${item.productId}`}</h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Quantity: {item.quantity} × {formatPrice(item.productPrice)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-lg font-bold text-primary">
+                                                    {formatPrice(item.subtotal || (item.quantity * item.productPrice))}
+                                                </div>
                                             </div>
-                                            <div
-                                                className="text-lg font-bold text-primary">{formatPrice(item.quantity * item.productPrice)}</div>
+                                            {index < order.items.length - 1 && <Separator className="mt-4"/>}
                                         </div>
-                                        {index < order.items.length - 1 && <Separator className="mt-4"/>}
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="text-muted-foreground text-center py-4">No items in this order</p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

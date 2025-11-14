@@ -2,8 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Category } from './schemas/category.schema';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoryCreateInput, CategoryUpdateInput } from './types/category.types';
 
 @Injectable()
 export class CategoriesService {
@@ -23,18 +22,18 @@ export class CategoriesService {
     return category;
   }
 
-  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+  async create(input: CategoryCreateInput): Promise<Category> {
     // Check if category with same name already exists
-    const existing = await this.categoryModel.findOne({ name: createCategoryDto.name }).exec();
+    const existing = await this.categoryModel.findOne({ name: input.name }).exec();
     if (existing) {
-      throw new ConflictException(`Category with name "${createCategoryDto.name}" already exists`);
+      throw new ConflictException(`Category with name "${input.name}" already exists`);
     }
 
-    const category = new this.categoryModel(createCategoryDto);
+    const category = new this.categoryModel(input);
     return category.save();
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+  async update(id: string, updateCategoryDto: CategoryUpdateInput): Promise<Category> {
     // Check if category exists
     const existing = await this.findOne(id);
 

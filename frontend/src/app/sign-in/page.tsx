@@ -10,6 +10,7 @@ import {authService} from '@/lib/api/services/auth.service';
 import {LoginCredentials} from '@/lib/api/definitions';
 import {toast} from "sonner";
 import {House} from "lucide-react";
+import { debugLog } from "@/lib/utils";
 
 export default function SignInPage() {
 
@@ -32,7 +33,9 @@ export default function SignInPage() {
 
             router.push(`/products`);
         } catch (err: any) {
-            console.log(err.message)
+            const message = err?.message ?? "Login failed. Please try again."
+            toast.error(message)
+            debugLog("Sign-in error", err)
         } finally {
         }
     };
@@ -56,11 +59,8 @@ export default function SignInPage() {
                 <div className="bg-background rounded-lg border shadow-sm p-8">
                     {/* Logo */}
                     <div className="flex justify-center mb-6">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                                <span className="text-primary-foreground font-bold text-xl">T</span>
-                            </div>
-                            <span className="font-bold text-2xl">TechStore</span>
+                        <Link href="/" className="flex items-center justify-center">
+                            <img src="/favicon.ico" alt="achetez.com" className="h-24 w-24" />
                         </Link>
                     </div>
 

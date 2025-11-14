@@ -59,6 +59,12 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
+          <div className="flex flex-col items-center mb-4">
+            <img src="/favicon.ico" alt="achetez.com" className="h-16 w-16 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              achetez.com
+            </h1>
+          </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             Create Account
           </h2>

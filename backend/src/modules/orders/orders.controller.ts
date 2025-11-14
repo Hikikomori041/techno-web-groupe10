@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
@@ -27,6 +28,8 @@ import {
   UpdatePaymentStatusDocs,
   CancelOrderDocs,
 } from './orders.swagger';
+import { OrderMapper } from './mappers/order.mapper';
+import { OrderResponseDto } from './dto/order-response.dto';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -36,34 +39,45 @@ export class OrdersController {
 
   @Post()
   @CreateOrderDocs()
-  async createOrder(@Request() req, @Body() createOrderDto: CreateOrderDto) {
+  async createOrder(@Request() req, @Body() createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
     const userId = req.user.userId;
-    return this.ordersService.createOrder(userId, createOrderDto);
+    const input = OrderMapper.fromCreateDto(createOrderDto);
+    const order = await this.ordersService.createOrder(userId, input);
+    if (!order) {
+      throw new NotFoundException('Failed to create order');
+    }
+    return OrderMapper.toResponse(order);
   }
 
   @Get()
   @GetUserOrdersDocs()
-  async getUserOrders(@Request() req) {
+  async getUserOrders(@Request() req): Promise<OrderResponseDto[]> {
     const userId = req.user.userId;
-    return this.ordersService.getUserOrders(userId);
+    const orders = await this.ordersService.getUserOrders(userId);
+    return OrderMapper.toResponseList(orders);
   }
 
   @Get('all')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.MODERATOR)
   @GetAllOrdersDocs()
-  async getAllOrders(@Request() req) {
+  async getAllOrders(@Request() req): Promise<OrderResponseDto[]> {
     const userId = req.user.userId;
     const userRoles = req.user.roles;
-    return this.ordersService.getAllOrders(userId, userRoles);
+    const orders = await this.ordersService.getAllOrders(userId, userRoles);
+    return OrderMapper.toResponseList(orders);
   }
 
   @Get(':id')
   @GetOrderByIdDocs()
-  async getOrderById(@Request() req, @Param('id') id: string) {
+  async getOrderById(@Request() req, @Param('id') id: string): Promise<OrderResponseDto> {
     const userId = req.user.userId;
     const userRoles = req.user.roles;
-    return this.ordersService.getOrderById(id, userId, userRoles);
+    const order = await this.ordersService.getOrderById(id, userId, userRoles);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    return OrderMapper.toResponse(order);
   }
 
   @Put(':id/status')
@@ -74,10 +88,16 @@ export class OrdersController {
     @Request() req,
     @Param('id') id: string,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
-  ) {
+  ): Promise<OrderResponseDto> {
     const userId = req.user.userId;
     const userRoles = req.user.roles;
-    return this.ordersService.updateOrderStatus(id, updateOrderStatusDto.status, userId, userRoles);
+    const order = await this.ordersService.updateOrderStatus(
+      id,
+      updateOrderStatusDto.status,
+      userId,
+      userRoles,
+    );
+    return OrderMapper.toResponse(order);
   }
 
   @Put(':id/payment')
@@ -88,18 +108,25 @@ export class OrdersController {
     @Request() req,
     @Param('id') id: string,
     @Body() updatePaymentStatusDto: UpdatePaymentStatusDto,
-  ) {
+  ): Promise<OrderResponseDto> {
     const userId = req.user.userId;
     const userRoles = req.user.roles;
-    return this.ordersService.updatePaymentStatus(id, updatePaymentStatusDto.paymentStatus, userId, userRoles);
+    const order = await this.ordersService.updatePaymentStatus(
+      id,
+      updatePaymentStatusDto.paymentStatus,
+      userId,
+      userRoles,
+    );
+    return OrderMapper.toResponse(order);
   }
 
   @Delete(':id')
   @CancelOrderDocs()
-  async cancelOrder(@Request() req, @Param('id') id: string) {
+  async cancelOrder(@Request() req, @Param('id') id: string): Promise<OrderResponseDto> {
     const userId = req.user.userId;
     const userRoles = req.user.roles;
-    return this.ordersService.cancelOrder(id, userId, userRoles);
+    const order = await this.ordersService.cancelOrder(id, userId, userRoles);
+    return OrderMapper.toResponse(order);
   }
 }
 

@@ -2,8 +2,6 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  ForbiddenException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -15,32 +13,11 @@ import { User } from '../users/schemas/user.schema';
 import { Role } from '../../common/enums/role.enum';
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
   ) {}
-
-  async onModuleInit() {
-    // Create default admin user for testing
-    await this.createDefaultAdmin();
-  }
-
-  // Create default admin for testing
-  private async createDefaultAdmin() {
-    const adminExists = await this.userModel.findOne({ email: 'admin@example.com' });
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      await this.userModel.create({
-        email: 'admin@example.com',
-        password: hashedPassword,
-        firstName: 'Admin',
-        lastName: 'User',
-        provider: 'local',
-        roles: [Role.ADMIN, Role.USER],
-      });
-    }
-  }
 
   // Google OAuth Login
   googleLogin(req) {
@@ -176,11 +153,6 @@ export class AuthService implements OnModuleInit {
 
     if (!user) {
       throw new UnauthorizedException('User not found');
-    }
-
-    // Prevent deleting the default admin
-    if (user.email === 'admin@example.com') {
-      throw new ForbiddenException('Cannot delete default admin');
     }
 
     await this.userModel.findByIdAndDelete(userId);

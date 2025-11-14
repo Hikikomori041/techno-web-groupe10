@@ -1,11 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { Cart, CartItem, Product } from "@/lib/api/definitions";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import type { Cart, CartItem } from "@/lib/api/definitions";
 import { cartService } from "@/lib/api/services/cart.service";
 import { authService } from "@/lib/api/services/auth.service";
 import { productsService } from "@/lib/api/services/products.service";
 import { toast } from "sonner";
+import { debugLog } from "@/lib/utils";
 
 interface CartContextType {
     cart: Cart;
@@ -61,7 +62,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             setCart(backendCart);
             updateCartStats(backendCart);
         } catch (error) {
-            console.error("Error loading cart from backend:", error);
+            debugLog("Error loading cart from backend:", error);
             throw error;
         }
     }, [updateCartStats]);
@@ -75,42 +76,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 setCart(parsed);
                 updateCartStats(parsed);
             } catch (error) {
-                console.error("Error parsing cart from localStorage:", error);
+                debugLog("Error parsing cart from localStorage:", error);
             }
         }
     }, [updateCartStats]);
 
-    // Check authentication status and load cart
-    useEffect(() => {
-        const initializeCart = async () => {
-            try {
-                const authCheck = await authService.isAuthenticated();
-                setIsAuthenticated(authCheck.authenticated);
-
-                if (authCheck.authenticated) {
-                    await loadCartFromBackend();
-                } else {
-                    loadCartFromLocalStorage();
-                }
-            } catch (error) {
-                console.error("Error initializing cart:", error);
-                loadCartFromLocalStorage();
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        initializeCart();
-    }, [loadCartFromBackend, loadCartFromLocalStorage]);
-
-    // Save to localStorage (only for guests)
-    useEffect(() => {
-        if (!isAuthenticated && !isLoading) {
-            localStorage.setItem("cart", JSON.stringify(cart));
-        }
-    }, [cart, isAuthenticated, isLoading]);
-
     // Sync local cart to backend when user logs in
+    // Using a ref to store the function to avoid circular dependencies
+    const syncCartOnLoginRef = useRef<(() => Promise<void>) | null>(null);
+    
     const syncCartOnLogin = useCallback(async () => {
         const localCartData = localStorage.getItem('cart');
 
@@ -123,14 +97,36 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             const localCart: Cart = JSON.parse(localCartData);
 
-            if (localCart.items.length > 0) {
-                console.log('Syncing local cart to backend...');
+            if (localCart.items && localCart.items.length > 0) {
+                debugLog("Syncing local cart to backend", { itemCount: localCart.items.length });
 
                 // Add each item from local cart to backend
-                const syncPromises = localCart.items.map(item =>
-                    cartService.addToCart(item.productId._id, item.quantity)
-                        .catch(err => console.error(`Failed to sync ${item.productId.nom}:`, err))
-                );
+                const syncPromises = localCart.items.map(item => {
+                    // Extract product ID - handle both object and string formats
+                    let productId: string;
+                    let productName: string = 'Unknown Product';
+                    
+                    if (typeof item.productId === 'object' && item.productId !== null) {
+                        // Product is an object
+                        productId = item.productId._id || item.productId.id || '';
+                        productName = item.productId.nom || 'Unknown Product';
+                    } else {
+                        // Product ID is a string
+                        productId = item.productId?.toString() || '';
+                    }
+                    
+                    if (!productId) {
+                        debugLog("Skipping cart item with invalid product ID", item);
+                        return Promise.resolve();
+                    }
+
+                    return cartService.addToCart(productId, item.quantity)
+                        .catch(err => {
+                            debugLog(`Failed to sync ${productName}:`, err);
+                            // Don't throw, continue with other items
+                            return null;
+                        });
+                });
 
                 await Promise.all(syncPromises);
 
@@ -146,23 +142,131 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 await loadCartFromBackend();
             }
         } catch (error) {
-            console.error('Error syncing cart:', error);
+            debugLog('Error syncing cart:', error);
             toast.error('Failed to sync cart');
             // Still try to load from backend
             await loadCartFromBackend();
         }
     }, [loadCartFromBackend]);
+    
+    // Update ref immediately when syncCartOnLogin is created/updated
+    syncCartOnLoginRef.current = syncCartOnLogin;
+
+    // Track previous authentication state to detect login
+    const prevAuthRef = useRef<boolean | null>(null);
+
+    // Check authentication status and load cart
+    useEffect(() => {
+        const initializeCart = async () => {
+            try {
+                const authCheck = await authService.isAuthenticated();
+                const wasAuthenticated = prevAuthRef.current;
+                const isNowAuthenticated = authCheck.authenticated;
+                
+                setIsAuthenticated(isNowAuthenticated);
+                
+                // On initial load (prevAuthRef.current === null), just load cart without syncing
+                // Sync will be handled by checkAuthAndSync if there's an actual login transition
+                if (wasAuthenticated === null) {
+                    // Initial load - just load the appropriate cart
+                    prevAuthRef.current = isNowAuthenticated;
+                    if (isNowAuthenticated) {
+                        await loadCartFromBackend();
+                    } else {
+                        loadCartFromLocalStorage();
+                    }
+                } else {
+                    // Not initial load - update ref
+                    prevAuthRef.current = isNowAuthenticated;
+                    if (isNowAuthenticated) {
+                        await loadCartFromBackend();
+                    } else {
+                        loadCartFromLocalStorage();
+                    }
+                }
+            } catch (error: any) {
+                // Only log non-401 errors (401 is handled gracefully in authService)
+                if (error?.response?.status !== 401) {
+                    debugLog("Error initializing cart:", error);
+                }
+                // Always fall back to local storage on any error
+                loadCartFromLocalStorage();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initializeCart();
+    }, [loadCartFromBackend, loadCartFromLocalStorage]);
+
+    // Check auth status helper
+    const checkAuthAndSync = useCallback(async () => {
+        if (isLoading) return; // Don't check while initializing
+
+        try {
+            const authCheck = await authService.isAuthenticated();
+            const wasAuthenticated = prevAuthRef.current;
+            const isNowAuthenticated = authCheck.authenticated;
+
+            // If authentication status changed from false to true, sync cart
+            if (isNowAuthenticated && !wasAuthenticated && !isLoading) {
+                debugLog("Authentication status changed to logged in, syncing cart");
+                prevAuthRef.current = isNowAuthenticated;
+                setIsAuthenticated(true);
+                // Use ref to avoid circular dependency
+                if (syncCartOnLoginRef.current) {
+                    await syncCartOnLoginRef.current();
+                }
+            } else if (isNowAuthenticated !== wasAuthenticated) {
+                // Update state if auth status changed
+                prevAuthRef.current = isNowAuthenticated;
+                setIsAuthenticated(isNowAuthenticated);
+                if (isNowAuthenticated) {
+                    await loadCartFromBackend();
+                } else {
+                    loadCartFromLocalStorage();
+                }
+            }
+        } catch (error: any) {
+            // Silently handle auth check errors
+            if (error?.response?.status !== 401) {
+                debugLog("Error checking auth status:", error);
+            }
+        }
+    }, [isLoading, loadCartFromBackend, loadCartFromLocalStorage]);
+
+    // Periodically check authentication status to catch login events
+    useEffect(() => {
+        const checkAuthInterval = setInterval(checkAuthAndSync, 3000); // Check every 3 seconds
+        return () => clearInterval(checkAuthInterval);
+    }, [checkAuthAndSync]);
+
+    // Check auth when window regains focus (user might have logged in in another tab)
+    useEffect(() => {
+        const handleFocus = () => {
+            checkAuthAndSync();
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [checkAuthAndSync]);
+
+    // Save to localStorage (only for guests)
+    useEffect(() => {
+        if (!isAuthenticated && !isLoading) {
+            localStorage.setItem("cart", JSON.stringify(cart));
+        }
+    }, [cart, isAuthenticated, isLoading]);
 
     // Add item to cart
     const addItemToCart = async (productId: string, quantity: number = 1) => {
         try {
-            console.log('🛒 Frontend addItemToCart:', { productId, quantity, isAuthenticated });
+            debugLog("addItemToCart called", { productId, quantity, isAuthenticated });
             
             if (isAuthenticated) {
                 // Add to backend
-                console.log('📡 Calling backend addToCart...');
+                debugLog("Calling backend addToCart");
                 await cartService.addToCart(productId, quantity);
-                console.log('✅ Backend call successful, reloading cart...');
+                debugLog("Backend addToCart success");
                 await loadCartFromBackend();
                 toast.success("Item added to cart");
             } else {
@@ -218,8 +322,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 toast.info("Sign in to save your cart", { duration: 3000 });
             }
         } catch (error: any) {
-            console.error("❌ Error adding item to cart:", error);
-            console.error("Error details:", {
+            debugLog("Error adding item to cart:", error);
+            debugLog("Error details:", {
                 message: error.message,
                 response: error.response?.data,
                 status: error.response?.status,
@@ -249,7 +353,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 toast.success("Item removed from cart");
             }
         } catch (error) {
-            console.error("Error removing item from cart:", error);
+            debugLog("Error removing item from cart:", error);
             toast.error("Failed to remove item from cart");
         }
     };
@@ -283,7 +387,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 });
             }
         } catch (error) {
-            console.error("Error updating item quantity:", error);
+            debugLog("Error updating item quantity:", error);
             toast.error("Failed to update quantity");
         }
     };
@@ -305,7 +409,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 toast.success("Cart cleared");
             }
         } catch (error) {
-            console.error("Error clearing cart:", error);
+            debugLog("Error clearing cart:", error);
             toast.error("Failed to clear cart");
         }
     };

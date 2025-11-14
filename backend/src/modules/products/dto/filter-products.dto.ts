@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsBoolean, IsMongoId, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class FilterProductsDto {
   @ApiPropertyOptional({
@@ -8,7 +8,8 @@ export class FilterProductsDto {
     example: '507f1f77bcf86cd799439011',
   })
   @IsOptional()
-  @IsMongoId()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @IsMongoId({ message: 'Category ID must be a valid MongoDB ObjectId' })
   categoryId?: string;
 
   @ApiPropertyOptional({

@@ -12,6 +12,7 @@ import {Search, X} from "lucide-react"
 import {ProductFilters, Category} from "@/lib/api/definitions"
 import {categoriesService} from "@/lib/api/services/categories.service"
 import {useDebounce} from "@/hooks/useDebounce"
+import {debugLog} from "@/lib/utils"
 
 interface FilterPanelProps {
     onChange: (filters: ProductFilters) => void
@@ -44,9 +45,12 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
         const fetchCategories = async () => {
             try {
                 const data = await categoriesService.getAllCategories()
-                setCategories(data.filter(cat => cat.isActive))
+                debugLog("Fetched categories:", data)
+                const activeCategories = data.filter(cat => cat.isActive && (cat._id || cat.id))
+                debugLog("Active categories:", activeCategories.map(c => ({ _id: c._id, id: (c as any).id, name: c.name })))
+                setCategories(activeCategories)
             } catch (error) {
-                console.error("Error fetching categories:", error)
+                debugLog("Error fetching categories:", error)
             } finally {
                 setLoadingCategories(false)
             }
@@ -66,7 +70,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
         const filters: ProductFilters = {
             search: debouncedSearch || undefined,
-            categoryId: categoryId || undefined,
+            categoryId: categoryId && categoryId.trim() !== '' ? categoryId.trim() : undefined,
             minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
             maxPrice: priceRange[1] < 5000 ? priceRange[1] : undefined,
             inStockOnly: inStockOnly || undefined,
@@ -78,6 +82,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
             Object.entries(filters).filter(([_, v]) => v !== undefined)
         ) as ProductFilters
 
+        debugLog("Filter changes:", { categoryId, cleanFilters })
         onChange(cleanFilters)
     }, [debouncedSearch, categoryId, priceRange, inStockOnly, selectedSpecs, onChange])
 
@@ -166,11 +171,28 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Toutes les catégories</SelectItem>
-                            {categories.map((category) => (
-                                <SelectItem key={category._id} value={category._id}>
-                                    {category.name}
+                            {categories.length === 0 && !loadingCategories ? (
+                                <SelectItem value="no-categories" disabled>
+                                    Aucune catégorie disponible
                                 </SelectItem>
-                            ))}
+                            ) : (
+                                categories
+                                    .filter(category => {
+                                        const catId = category._id || (category as any).id;
+                                        return catId && String(catId).trim() !== '';
+                                    })
+                                    .map((category) => {
+                                        const catId = category._id || (category as any).id;
+                                        return (
+                                            <SelectItem 
+                                                key={String(catId)} 
+                                                value={String(catId)}
+                                            >
+                                                {category.name}
+                                            </SelectItem>
+                                        );
+                                    })
+                            )}
                         </SelectContent>
                     </Select>
                 </div>

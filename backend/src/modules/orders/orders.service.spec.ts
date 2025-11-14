@@ -124,7 +124,7 @@ describe('OrdersService', () => {
         exec: jest.fn().mockResolvedValueOnce(mockCart),
       } as any);
 
-      const result = await service.createOrder(mockUserId, shippingAddress);
+      const result = await service.createOrder(mockUserId, { shippingAddress });
 
       expect(result).toBeDefined();
       expect(mockOrderModel.create).toHaveBeenCalled();
@@ -140,10 +140,12 @@ describe('OrdersService', () => {
 
       await expect(
         service.createOrder(mockUserId, {
-          street: 'Test',
-          city: 'Paris',
-          postalCode: '75001',
-          country: 'France',
+          shippingAddress: {
+            street: 'Test',
+            city: 'Paris',
+            postalCode: '75001',
+            country: 'France',
+          },
         }),
       ).rejects.toThrow(BadRequestException);
     });

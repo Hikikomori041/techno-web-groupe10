@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order, OrderStatus } from '../orders/schemas/order.schema';
@@ -8,6 +8,7 @@ import { Role } from '../../common/enums/role.enum';
 
 @Injectable()
 export class StatsService {
+  private readonly logger = new Logger(StatsService.name);
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(Product.name) private productModel: Model<Product>,
@@ -19,7 +20,7 @@ export class StatsService {
     const isModerator = userRoles?.some(role => role.toLowerCase() === Role.MODERATOR.toLowerCase());
     const shouldFilter = isModerator && !isAdmin && userId;
     
-    console.log('📊 Stats Filter Debug:', {
+    this.logger.debug('Stats filter applied', {
       userId,
       userRoles,
       isAdmin,
@@ -36,10 +37,10 @@ export class StatsService {
         .find({ moderatorId: new Types.ObjectId(userId) })
         .exec();
       productIds = allProducts.map(p => p._id.toString());
-      console.log(`🔍 Moderator ${userId} owns ${allProducts.length} products`);
+      this.logger.debug(`Moderator ${userId} owns ${allProducts.length} products`);
     } else {
       allProducts = await this.productModel.find().exec();
-      console.log(`👑 Admin viewing all ${allProducts.length} products`);
+      this.logger.debug(`Admin viewing all ${allProducts.length} products`);
     }
     
     // Get all orders
@@ -51,13 +52,13 @@ export class StatsService {
       allOrders = allOrders.filter(order => 
         order.items.some(item => productIds.includes(item.productId.toString()))
       );
-      console.log(`📦 Filtered ${totalOrdersBeforeFilter} orders to ${allOrders.length} orders containing moderator's products`);
+      this.logger.debug(`Filtered ${totalOrdersBeforeFilter} orders to ${allOrders.length} containing moderator products`);
     } else if (shouldFilter && productIds.length === 0) {
       // Moderator has no products, show empty stats
       allOrders = [];
-      console.log(`📦 Moderator has no products, showing 0 orders`);
+      this.logger.debug(`Moderator has no products, showing 0 orders`);
     } else {
-      console.log(`📦 Admin viewing all ${allOrders.length} orders`);
+      this.logger.debug(`Admin viewing all ${allOrders.length} orders`);
     }
     
     // Calculate revenue (only from completed/shipped/delivered orders)
@@ -110,7 +111,14 @@ export class StatsService {
       ? totalRevenue / completedOrders.length 
       : 0;
     
-    console.log(`💰 Revenue calculated - Total: €${totalRevenue.toFixed(2)}, Month: €${monthlyRevenue.toFixed(2)}, Today: €${todayRevenue.toFixed(2)}`);
+    this.logger.debug(
+      `Revenue calculated`,
+      {
+        total: totalRevenue.toFixed(2),
+        month: monthlyRevenue.toFixed(2),
+        today: todayRevenue.toFixed(2),
+      },
+    );
     
     // Orders by status
     const ordersByStatus = {
@@ -138,9 +146,9 @@ export class StatsService {
       totalUsers = allUsers.length;
       admins = allUsers.filter(u => u.roles.includes(Role.ADMIN)).length;
       moderators = allUsers.filter(u => u.roles.includes(Role.MODERATOR)).length;
-      console.log(`👥 Admin viewing user stats: ${totalUsers} total users`);
+      this.logger.debug(`Admin viewing user stats: ${totalUsers} total users`);
     } else {
-      console.log(`👥 Moderator - user stats hidden`);
+      this.logger.debug(`Moderator - user stats hidden`);
     }
     
     // Calculate total quantity sold (only for moderator's products if applicable)
@@ -175,32 +183,45 @@ export class StatsService {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
     
-    console.log(`📈 Top products calculated: ${topProducts.length} products, total sold: ${totalQuantitySold}`);
+    this.logger.debug(`Top products calculated`, { count: topProducts.length, totalSold: totalQuantitySold });
     
     // Revenue by day (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
     
-    const recentOrders = completedOrders.filter(order => 
-      new Date((order as any).createdAt) >= thirtyDaysAgo
-    );
+    const recentOrders = completedOrders.filter(order => {
+      const orderDate = (order as any).createdAt ? new Date((order as any).createdAt) : null;
+      return orderDate && orderDate >= thirtyDaysAgo;
+    });
     
-    const revenueByDay = new Map();
+    this.logger.debug(`Filtered ${recentOrders.length} recent orders for revenue by day calculation`);
+    
+    const revenueByDay = new Map<string, { date: string; revenue: number; orders: number }>();
+    
     recentOrders.forEach(order => {
-      const date = new Date((order as any).createdAt).toISOString().split('T')[0];
-      const current = revenueByDay.get(date) || { revenue: 0, orders: 0 };
+      const orderDate = (order as any).createdAt ? new Date((order as any).createdAt) : new Date();
+      const dateStr = orderDate.toISOString().split('T')[0];
+      const current = revenueByDay.get(dateStr) || { date: dateStr, revenue: 0, orders: 0 };
       const orderRevenue = calculateOrderRevenue(order);
-      revenueByDay.set(date, {
-        date,
-        revenue: current.revenue + orderRevenue,
-        orders: current.orders + 1,
-      });
+      
+      if (orderRevenue > 0) {
+        revenueByDay.set(dateStr, {
+          date: dateStr,
+          revenue: current.revenue + orderRevenue,
+          orders: current.orders + 1,
+        });
+      }
     });
     
     const revenueByDayArray = Array.from(revenueByDay.values())
       .sort((a, b) => a.date.localeCompare(b.date));
     
-    console.log(`📅 Revenue by day calculated for last 30 days: ${revenueByDayArray.length} days with data`);
+    this.logger.debug(`Revenue by day calculated for last 30 days`, { 
+      daysWithData: revenueByDayArray.length,
+      totalRevenue: revenueByDayArray.reduce((sum, day) => sum + day.revenue, 0),
+      sampleDays: revenueByDayArray.slice(0, 3).map(d => ({ date: d.date, revenue: d.revenue }))
+    });
     
     // Recent orders (last 5)
     const recentOrdersList = allOrders

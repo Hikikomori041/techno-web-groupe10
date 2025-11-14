@@ -3,18 +3,21 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order, OrderStatus, PaymentStatus } from './schemas/order.schema';
 import { CartService } from '../cart/cart.service';
 import { ProductsService } from '../products/services/products.service';
-import { CreateOrderDto } from './dto/create-order.dto';
 import { Role } from '../../common/enums/role.enum';
 import { Product } from '../products/schemas/product.schema';
+import { CreateOrderInput } from './types/order.types';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(Product.name) private productModel: Model<Product>,
@@ -32,7 +35,7 @@ export class OrdersService {
     return `ORD-${year}${month}${day}-${random}`;
   }
 
-  async createOrder(userId: string, createOrderDto: CreateOrderDto) {
+  async createOrder(userId: string, input: CreateOrderInput): Promise<Order> {
     // 1. Get user's cart
     const cart = await this.cartService.getCart(userId);
 
@@ -44,10 +47,28 @@ export class OrdersService {
     const orderItems: any[] = [];
     
     for (const cartItem of cart.items) {
-      const product = await this.productsService.findOne(cartItem.productId._id);
+      // Extract product ID - handle both object and string formats
+      let productId: string;
+      let productName: string;
+      
+      if (typeof cartItem.productId === 'object' && cartItem.productId !== null) {
+        // Product is populated (object)
+        productId = cartItem.productId._id?.toString() || cartItem.productId.id?.toString() || '';
+        productName = cartItem.productId.nom || 'Unknown Product';
+      } else {
+        // Product ID is a string
+        productId = cartItem.productId?.toString() || '';
+        productName = 'Unknown Product';
+      }
+      
+      if (!productId) {
+        throw new BadRequestException('Invalid product ID in cart item');
+      }
+      
+      const product = await this.productsService.findOne(productId);
       
       if (!product) {
-        throw new NotFoundException(`Produit ${cartItem.productId.nom} introuvable`);
+        throw new NotFoundException(`Produit ${productName} introuvable`);
       }
 
       // Check stock availability
@@ -82,67 +103,115 @@ export class OrdersService {
       total: cart.total,
       status: OrderStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
-      shippingAddress: createOrderDto.shippingAddress,
+      shippingAddress: input.shippingAddress,
     });
 
     await order.save();
 
-    // 4. Clear cart
-    await this.cartService.clearCart(userId);
+    // 4. Clear cart (don't fail order creation if cart clearing fails, but log it)
+    try {
+      await this.cartService.clearCart(userId);
+      this.logger.debug(`Cart cleared successfully for user ${userId} after order creation`);
+    } catch (clearCartError) {
+      // Log error but don't fail the order creation
+      // The order is already created, so we just log the cart clearing failure
+      this.logger.error(`Failed to clear cart after order creation for user ${userId}: ${clearCartError.message}`, clearCartError.stack);
+      // Optionally, you could add a retry mechanism or queue this for later
+    }
 
     // 5. Return order with populated product references
-    return this.orderModel
+    const populatedOrder = await this.orderModel
       .findById(order._id)
       .populate('userId', 'firstName lastName email')
       .exec();
+    
+    if (!populatedOrder) {
+      throw new NotFoundException('Failed to retrieve created order');
+    }
+    
+    return populatedOrder;
   }
 
-  async getUserOrders(userId: string) {
+  async getUserOrders(userId: string): Promise<Order[]> {
     return this.orderModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
       .exec();
   }
 
-  async getOrderById(orderId: string, userId: string, userRoles: string[]) {
-    const order = await this.orderModel
-      .findById(orderId)
-      .populate('userId', 'firstName lastName email')
-      .exec();
-
-    if (!order) {
-      throw new NotFoundException('Commande introuvable');
-    }
-
-    // Check access
-    const isAdmin = userRoles.includes(Role.ADMIN);
-    const isModerator = userRoles.includes(Role.MODERATOR) && !isAdmin;
-    const isOwner = order.userId._id.toString() === userId;
-
-    if (isModerator) {
-      // Moderator can only see orders containing their products
-      const moderatorProducts = await this.productModel
-        .find({ moderatorId: new Types.ObjectId(userId) })
-        .select('_id')
-        .exec();
-      
-      const productIds = moderatorProducts.map(p => (p._id as Types.ObjectId).toString());
-      const hasModeratorProduct = order.items.some(item => 
-        productIds.includes(item.productId.toString())
-      );
-      
-      if (!hasModeratorProduct) {
-        throw new ForbiddenException('Vous ne pouvez voir que les commandes contenant vos produits');
+  async getOrderById(orderId: string, userId: string, userRoles: string[]): Promise<Order> {
+    try {
+      // Validate orderId format
+      if (!Types.ObjectId.isValid(orderId)) {
+        this.logger.error(`Invalid orderId format: ${orderId}`);
+        throw new BadRequestException('Invalid order ID format');
       }
-    } else if (!isAdmin && !isOwner) {
-      // Regular user can only see their own orders
-      throw new ForbiddenException('Vous ne pouvez voir que vos propres commandes');
-    }
 
-    return order;
+      const order = await this.orderModel
+        .findById(orderId)
+        .populate('userId', 'firstName lastName email')
+        .exec();
+
+      if (!order) {
+        this.logger.warn(`Order not found: ${orderId}`);
+        throw new NotFoundException('Commande introuvable');
+      }
+
+      // Check access - handle both populated and unpopulated userId
+      const isAdmin = userRoles.includes(Role.ADMIN);
+      const isModerator = userRoles.includes(Role.MODERATOR) && !isAdmin;
+      
+      // Extract order userId - handle both ObjectId and populated object
+      let orderUserId: string;
+      const userIdValue = order.userId as any;
+      if (typeof userIdValue === 'object' && userIdValue !== null && !(userIdValue instanceof Types.ObjectId)) {
+        // Populated user object
+        orderUserId = userIdValue._id?.toString() || userIdValue.id?.toString() || '';
+      } else {
+        // ObjectId or string
+        orderUserId = userIdValue?.toString() || '';
+      }
+      
+      const isOwner = orderUserId === userId;
+
+      if (isModerator) {
+        // Moderator can only see orders containing their products
+        const moderatorProducts = await this.productModel
+          .find({ moderatorId: new Types.ObjectId(userId) })
+          .select('_id')
+          .exec();
+        
+        const productIds = moderatorProducts.map(p => (p._id as Types.ObjectId).toString());
+        const hasModeratorProduct = order.items.some(item => 
+          productIds.includes(item.productId.toString())
+        );
+        
+        if (!hasModeratorProduct) {
+          this.logger.warn(`Moderator ${userId} attempted to access order ${orderId} without moderator products`);
+          throw new ForbiddenException('Vous ne pouvez voir que les commandes contenant vos produits');
+        }
+      } else if (!isAdmin && !isOwner) {
+        // Regular user can only see their own orders
+        this.logger.warn(`User ${userId} attempted to access order ${orderId} owned by ${orderUserId}`);
+        throw new ForbiddenException('Vous ne pouvez voir que vos propres commandes');
+      }
+
+      this.logger.debug(`Order ${orderId} retrieved successfully for user ${userId}`);
+      return order;
+    } catch (error) {
+      // Re-throw known exceptions
+      if (error instanceof NotFoundException || 
+          error instanceof BadRequestException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      // Log and wrap unexpected errors
+      this.logger.error(`Error getting order ${orderId} for user ${userId}: ${error.message}`, error.stack);
+      throw new BadRequestException(`Failed to retrieve order: ${error.message}`);
+    }
   }
 
-  async getAllOrders(userId?: string, userRoles?: string[]) {
+  async getAllOrders(userId?: string, userRoles?: string[]): Promise<Order[]> {
     // If user is moderator (not admin), only show orders containing their products
     const isModerator = userRoles?.includes(Role.MODERATOR) && !userRoles?.includes(Role.ADMIN);
     
@@ -176,7 +245,7 @@ export class OrdersService {
       .exec();
   }
 
-  async updateOrderStatus(orderId: string, status: OrderStatus, userId?: string, userRoles?: string[]) {
+  async updateOrderStatus(orderId: string, status: OrderStatus, userId?: string, userRoles?: string[]): Promise<Order> {
     const order = await this.orderModel.findById(orderId);
 
     if (!order) {
@@ -220,7 +289,7 @@ export class OrdersService {
     return order;
   }
 
-  async updatePaymentStatus(orderId: string, paymentStatus: PaymentStatus, userId?: string, userRoles?: string[]) {
+  async updatePaymentStatus(orderId: string, paymentStatus: PaymentStatus, userId?: string, userRoles?: string[]): Promise<Order> {
     const order = await this.orderModel.findById(orderId);
 
     if (!order) {
@@ -255,7 +324,7 @@ export class OrdersService {
     return order;
   }
 
-  async cancelOrder(orderId: string, userId: string, userRoles: string[]) {
+  async cancelOrder(orderId: string, userId: string, userRoles: string[]): Promise<Order> {
     const order = await this.orderModel.findById(orderId);
 
     if (!order) {

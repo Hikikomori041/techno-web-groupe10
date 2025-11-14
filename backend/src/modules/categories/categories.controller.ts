@@ -8,7 +8,7 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -16,6 +16,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
+import { CategoryMapper } from './mappers/category.mapper';
+import { CategoryResponseDto } from './dto/category-response.dto';
+import {
+  GetAllCategoriesDocs,
+  GetCategoryByIdDocs,
+  CreateCategoryDocs,
+  UpdateCategoryDocs,
+  DeleteCategoryDocs,
+} from './categories.swagger';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -23,58 +32,49 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all categories', description: 'Retrieve all product categories (public)' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
-  async findAll() {
-    return this.categoriesService.findAll();
+  @GetAllCategoriesDocs()
+  async findAll(): Promise<CategoryResponseDto[]> {
+    const categories = await this.categoriesService.findAll();
+    return CategoryMapper.toResponseList(categories);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get category by ID', description: 'Retrieve a single category by ID' })
-  @ApiResponse({ status: 200, description: 'Category retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Category not found' })
-  async findOne(@Param('id') id: string) {
-    return this.categoriesService.findOne(id);
+  @GetCategoryByIdDocs()
+  async findOne(@Param('id') id: string): Promise<CategoryResponseDto> {
+    const category = await this.categoriesService.findOne(id);
+    return CategoryMapper.toResponse(category);
   }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create category', description: 'Create a new product category (Admin only)' })
-  @ApiResponse({ status: 201, description: 'Category created successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  @ApiResponse({ status: 409, description: 'Category name already exists' })
-  async create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  @CreateCategoryDocs()
+  async create(@Body() createCategoryDto: CreateCategoryDto): Promise<CategoryResponseDto> {
+    const input = CategoryMapper.toCreateInput(createCategoryDto);
+    const category = await this.categoriesService.create(input);
+    return CategoryMapper.toResponse(category);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update category', description: 'Update an existing category (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Category updated successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  @ApiResponse({ status: 404, description: 'Category not found' })
-  @ApiResponse({ status: 409, description: 'Category name already exists' })
-  async update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-    return this.categoriesService.update(id, updateCategoryDto);
+  @UpdateCategoryDocs()
+  async update(
+    @Param('id') id: string,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+  ): Promise<CategoryResponseDto> {
+    const input = CategoryMapper.toUpdateInput(updateCategoryDto);
+    const category = await this.categoriesService.update(id, input);
+    return CategoryMapper.toResponse(category);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete category', description: 'Delete a category (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Category deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  @ApiResponse({ status: 404, description: 'Category not found' })
-  async remove(@Param('id') id: string) {
-    return this.categoriesService.remove(id);
+  @DeleteCategoryDocs()
+  async remove(@Param('id') id: string): Promise<CategoryResponseDto> {
+    const category = await this.categoriesService.remove(id);
+    return CategoryMapper.toResponse(category);
   }
 }
 

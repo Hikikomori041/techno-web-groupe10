@@ -15,6 +15,7 @@ import { categoriesService } from "@/lib/api/services/categories.service"
 import { Product, Category } from "@/lib/api/definitions"
 import { useCart } from "@/context/cart.context"
 import { toast } from "sonner"
+import { debugLog } from "@/lib/utils"
 
 export default function ProductDetailPage() {
     const params = useParams()
@@ -42,11 +43,11 @@ export default function ProductDetailPage() {
                         const categoryData = await categoriesService.getCategory(productData.id_categorie)
                         setCategory(categoryData)
                     } catch (err) {
-                        console.error("Error fetching category:", err)
+                        debugLog("Error fetching category:", err)
                     }
                 }
             } catch (err: any) {
-                console.error("Error fetching product:", err)
+                debugLog("Error fetching product:", err)
                 setError("Impossible de charger les détails du produit")
             } finally {
                 setLoading(false)
@@ -73,7 +74,7 @@ export default function ProductDetailPage() {
             await addItemToCart(product._id, quantity)
             toast.success(`${quantity} × ${product.nom} ajouté(s) au panier`)
         } catch (error: any) {
-            console.error("Error adding to cart:", error)
+            debugLog("Error adding to cart:", error)
             toast.error(error.message || "Erreur lors de l'ajout au panier")
         } finally {
             setAddingToCart(false)

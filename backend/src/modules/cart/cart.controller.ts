@@ -8,6 +8,9 @@ import {
   Param,
   UseGuards,
   Request,
+  Logger,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CartService } from './cart.service';
@@ -26,13 +29,15 @@ import {
 @Controller('cart')
 @UseGuards(JwtAuthGuard)
 export class CartController {
+  private readonly logger = new Logger(CartController.name);
+
   constructor(private readonly cartService: CartService) {}
 
   @Post()
   @AddToCartDocs()
   async addToCart(@Request() req, @Body() addToCartDto: AddToCartDto) {
     const userId = req.user.userId;
-    console.log('🛒 ADD TO CART - Controller received:', {
+    this.logger.debug(`addToCart request`, {
       userId,
       productId: addToCartDto.productId,
       quantity: addToCartDto.quantity,
@@ -44,10 +49,10 @@ export class CartController {
         addToCartDto.productId,
         addToCartDto.quantity || 1,
       );
-      console.log('✅ ADD TO CART - Success');
+      this.logger.debug('addToCart success');
       return result;
     } catch (error) {
-      console.error('❌ ADD TO CART - Error:', error.message);
+      this.logger.error(`addToCart error: ${error.message}`);
       throw error;
     }
   }
@@ -55,8 +60,25 @@ export class CartController {
   @Get()
   @GetCartDocs()
   async getCart(@Request() req) {
-    const userId = req.user.userId;
-    return this.cartService.getCart(userId);
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        this.logger.error('getCart called without userId in request');
+        throw new Error('User ID not found in request');
+      }
+      this.logger.debug(`getCart request for user ${userId}`);
+      const result = await this.cartService.getCart(userId);
+      this.logger.debug(`getCart success for user ${userId}, items: ${result.items?.length || 0}`);
+      return result;
+    } catch (error) {
+      const userId = req.user?.userId || 'unknown';
+      this.logger.error(`getCart error for user ${userId}: ${error.message}`, error.stack);
+      // Ensure we throw a proper HTTP exception
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(`Failed to retrieve cart: ${error.message}`);
+    }
   }
 
   @Put(':productId')

@@ -21,6 +21,7 @@ import {authService} from "@/lib/api/services/auth.service"
 import {toast} from "sonner"
 import {useRouter} from "next/navigation"
 import {ProductForm} from "@/app/_ui/products/product.form";
+import { debugLog } from "@/lib/utils";
 
 
 export default function ProductManagementPage() {
@@ -47,7 +48,7 @@ export default function ProductManagementPage() {
             }
 
             const fetchedProducts = await productsService.getAllProductsDashboard()
-            console.log('📦 Fetched products:', fetchedProducts.map(p => ({
+            debugLog("Fetched products", fetchedProducts.map(p => ({
                 nom: p.nom,
                 id_categorie: p.id_categorie,
                 categoryId: (p as any).categoryId
@@ -56,7 +57,7 @@ export default function ProductManagementPage() {
             setProducts(fetchedProducts)
             
             const fetchedCategories = await categoriesService.getAllCategories()
-            console.log('📂 Fetched categories:', fetchedCategories.map(c => ({ _id: c._id, name: c.name })))
+            debugLog("Fetched categories", fetchedCategories.map(c => ({ _id: c._id, name: c.name })))
             setCategories(fetchedCategories)
         } catch (error) {
             console.error("Error fetching data:", error)
@@ -78,14 +79,14 @@ export default function ProductManagementPage() {
 
     const getCategoryName = (categoryId: string) => {
         if (!categoryId) {
-            console.log('⚠️ No categoryId provided')
+            debugLog("No categoryId provided when resolving category name")
             return "No Category"
         }
         const name = categoryMap.get(categoryId)
         if (!name) {
-            console.log('⚠️ Category not found in map:', { 
-                categoryId, 
-                availableCategories: Array.from(categoryMap.keys()) 
+            debugLog("Category not found in map", {
+                categoryId,
+                availableCategories: Array.from(categoryMap.keys())
             })
         }
         return name || "Unknown"
@@ -165,6 +166,7 @@ export default function ProductManagementPage() {
                 categoryId: editForm.categoryId || selectedProduct.id_categorie,
                 quantite_en_stock: editForm.quantite_en_stock ?? selectedProduct.quantite_en_stock,
             }
+            debugLog("Updating product payload", updatedProduct)
             await productsService.updateProduct(selectedProduct._id, updatedProduct)
             await fetchProducts()
             toast.success("Product updated successfully")
@@ -581,7 +583,7 @@ export default function ProductManagementPage() {
                 quantite_en_stock: editForm.quantite_en_stock ?? selectedProduct.quantite_en_stock,
             }
 
-            console.log(updatedProduct)
+            debugLog("Dashboard inline product update", updatedProduct)
 
             await productsService.updateProduct(selectedProduct._id, updatedProduct)
             await fetchProducts()

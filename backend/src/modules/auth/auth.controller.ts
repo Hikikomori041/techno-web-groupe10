@@ -6,6 +6,7 @@ import {
   Request,
   Res,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -27,6 +28,8 @@ import {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   // Google OAuth Routes
@@ -54,7 +57,7 @@ export class AuthController {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const redirectUrl = `${frontendUrl}/`; // Redirect to home page
     
-    console.log('🔐 Google login successful, redirecting to:', redirectUrl);
+    this.logger.debug(`Google login successful, redirecting to ${redirectUrl}`);
     return res.redirect(redirectUrl);
   }
 

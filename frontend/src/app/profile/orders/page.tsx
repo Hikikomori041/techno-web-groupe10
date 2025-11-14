@@ -7,6 +7,7 @@ import type {Order} from "@/lib/api/definitions"
 import {Button} from "@/components/ui/button"
 import {Loader2, AlertTriangle, Package} from "lucide-react"
 import OrderCard from "@/app/_ui/orders/order-card";
+import { debugLog } from "@/lib/utils";
 
 function OrdersPage() {
     const router = useRouter()
@@ -22,7 +23,7 @@ function OrdersPage() {
         try {
             setLoading(true)
             const ordersData = await ordersService.getUserOrders()
-            console.log(ordersData)
+            debugLog("Loaded profile orders", ordersData)
             setOrders(ordersData)
         } catch (err: any) {
             setError(err.message || "Failed to load orders")

@@ -33,8 +33,8 @@ export const productsService = {
         };
 
         // Add filters only if they have values
-        if (filters?.categoryId) {
-            params.categoryId = filters.categoryId;
+        if (filters?.categoryId && filters.categoryId.trim() !== '') {
+            params.categoryId = filters.categoryId.trim();
         }
 
         if (filters?.search && filters.search.trim()) {

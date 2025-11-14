@@ -53,6 +53,39 @@ export const GetAllProductsDocs = () =>
     }),
   );
 
+export const GetAllProductsWithFiltersDocs = () =>
+  applyDecorators(
+    ApiOperation({ 
+      summary: 'Get all products with filters and pagination', 
+      description: 'Retrieve products with optional filters (category, price range, search, stock status, specifications) and pagination support' 
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Products retrieved successfully with pagination info',
+      schema: {
+        type: 'object',
+        properties: {
+          products: { type: 'array', items: { type: 'object' } },
+          total: { type: 'number', example: 50 },
+          page: { type: 'number', example: 1 },
+          limit: { type: 'number', example: 12 },
+          totalPages: { type: 'number', example: 5 },
+          hasMore: { type: 'boolean', example: true },
+        },
+      },
+    }),
+  );
+
+export const GenerateDescriptionDocs = () =>
+  applyDecorators(
+    ApiBearerAuth('JWT-auth'),
+    ApiOperation({ summary: 'Generate AI description for product', description: 'Generate an AI-powered description for an existing product' }),
+    ApiResponse({ status: 200, description: 'Description generated successfully', schema: { type: 'object', properties: { description: { type: 'string' } } } }),
+    ApiResponse({ status: 401, description: 'Unauthorized' }),
+    ApiResponse({ status: 403, description: 'Forbidden - Admin/Moderator only' }),
+    ApiResponse({ status: 404, description: 'Product not found' }),
+  );
+
 export const GetProductByIdDocs = () =>
   applyDecorators(
     ApiOperation({ 

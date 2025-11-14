@@ -28,6 +28,7 @@ import { Switch } from "@/components/ui/switch"
 import { categoriesService } from "@/lib/api/services/categories.service"
 import { Category } from "@/lib/api/definitions"
 import { toast } from "sonner"
+import { debugLog } from "@/lib/utils"
 
 export default function CategoriesManagementPage() {
     const [categories, setCategories] = useState<Category[]>([])
@@ -56,7 +57,7 @@ export default function CategoriesManagementPage() {
             }
             await fetchCategories()
         } catch (error) {
-            console.error("Error checking auth:", error)
+            debugLog("Error checking auth:", error)
             await fetchCategories()
         }
     }
@@ -65,9 +66,23 @@ export default function CategoriesManagementPage() {
         setLoading(true)
         try {
             const data = await categoriesService.getAllCategories()
-            setCategories(data)
+            // Deduplicate categories by _id or id to ensure unique keys
+            const uniqueCategories = data.reduce((acc, category) => {
+                const catId = category._id || (category as any).id;
+                const catIdStr = catId ? String(catId) : null;
+                if (catIdStr && !acc.seen.has(catIdStr)) {
+                    acc.seen.add(catIdStr);
+                    acc.unique.push(category);
+                } else if (!catIdStr) {
+                    // If no ID, include it anyway (shouldn't happen, but handle gracefully)
+                    acc.unique.push(category);
+                }
+                return acc;
+            }, { seen: new Set<string>(), unique: [] as Category[] });
+            
+            setCategories(uniqueCategories.unique)
         } catch (error: any) {
-            console.error("Error fetching categories:", error)
+            debugLog("Error fetching categories:", error)
             toast.error("Erreur lors du chargement des catégories")
         } finally {
             setLoading(false)
@@ -88,7 +103,7 @@ export default function CategoriesManagementPage() {
             setFormData({ name: "", description: "", isActive: true })
             await fetchCategories()
         } catch (error: any) {
-            console.error("Error creating category:", error)
+            debugLog("Error creating category:", error)
             toast.error(error.response?.data?.message || "Erreur lors de la création de la catégorie")
         } finally {
             setSubmitting(false)
@@ -101,16 +116,22 @@ export default function CategoriesManagementPage() {
             return
         }
 
+        const categoryId = selectedCategory._id || (selectedCategory as any).id;
+        if (!categoryId) {
+            toast.error("ID de catégorie invalide")
+            return
+        }
+
         setSubmitting(true)
         try {
-            await categoriesService.updateCategory(selectedCategory._id, formData)
+            await categoriesService.updateCategory(String(categoryId), formData)
             toast.success("Catégorie mise à jour avec succès")
             setIsEditDialogOpen(false)
             setSelectedCategory(null)
             setFormData({ name: "", description: "", isActive: true })
             await fetchCategories()
         } catch (error: any) {
-            console.error("Error updating category:", error)
+            debugLog("Error updating category:", error)
             toast.error(error.response?.data?.message || "Erreur lors de la mise à jour de la catégorie")
         } finally {
             setSubmitting(false)
@@ -120,15 +141,21 @@ export default function CategoriesManagementPage() {
     const handleDeleteCategory = async () => {
         if (!selectedCategory) return
 
+        const categoryId = selectedCategory._id || (selectedCategory as any).id;
+        if (!categoryId) {
+            toast.error("ID de catégorie invalide")
+            return
+        }
+
         setSubmitting(true)
         try {
-            await categoriesService.deleteCategory(selectedCategory._id)
+            await categoriesService.deleteCategory(String(categoryId))
             toast.success("Catégorie supprimée avec succès")
             setIsDeleteDialogOpen(false)
             setSelectedCategory(null)
             await fetchCategories()
         } catch (error: any) {
-            console.error("Error deleting category:", error)
+            debugLog("Error deleting category:", error)
             toast.error(error.response?.data?.message || "Erreur lors de la suppression de la catégorie")
         } finally {
             setSubmitting(false)
@@ -221,8 +248,16 @@ export default function CategoriesManagementPage() {
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        categories.map((category) => (
-                                            <TableRow key={category._id}>
+                                        categories.map((category, index) => {
+                                            // Ensure unique key - use _id, id, or fallback to index
+                                            const categoryKey = category._id 
+                                                ? String(category._id) 
+                                                : ((category as any).id 
+                                                    ? String((category as any).id) 
+                                                    : `category-${index}`)
+                                            
+                                            return (
+                                            <TableRow key={categoryKey}>
                                                 <TableCell className="font-medium">{category.name}</TableCell>
                                                 <TableCell className="max-w-xs">
                                                     <span className="line-clamp-1 text-sm text-muted-foreground">
@@ -267,7 +302,8 @@ export default function CategoriesManagementPage() {
                                                     </TableCell>
                                                 )}
                                             </TableRow>
-                                        ))
+                                            )
+                                        })
                                     )}
                                 </TableBody>
                             </Table>

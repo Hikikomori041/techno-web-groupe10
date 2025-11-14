@@ -15,6 +15,7 @@ import { productsService } from "@/lib/api/services/products.service"
 import { categoriesService } from "@/lib/api/services/categories.service"
 import { Category, Product } from "@/lib/api/definitions"
 import { toast } from "sonner"
+import { debugLog } from "@/lib/utils"
 
 export default function EditProductPage() {
     const router = useRouter()
@@ -167,7 +168,7 @@ export default function EditProductPage() {
                 specifications: validSpecs,
             }
 
-            console.log('✏️ Updating product with data:', updateData)
+            debugLog("Updating product with data", updateData)
 
             await productsService.updateProduct(productId, updateData)
 
@@ -253,7 +254,7 @@ export default function EditProductPage() {
                                     onValueChange={(value) => {
                                         if (value !== "placeholder") {
                                             handleInputChange("categoryId", value)
-                                            console.log('✅ Category updated:', value)
+                                            debugLog("Category updated", value)
                                         }
                                     }}
                                 >

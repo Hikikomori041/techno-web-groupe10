@@ -11,6 +11,7 @@ import { Header } from "@/app/_ui/commun/header"
 import { Footer } from "@/app/_ui/commun/footer"
 import { ordersService } from "@/lib/api/services/orders.service"
 import { Order } from "@/lib/api/definitions"
+import { debugLog } from "@/lib/utils"
 
 export default function OrderConfirmationPage() {
     const router = useRouter()
@@ -32,8 +33,9 @@ export default function OrderConfirmationPage() {
                 const orderData = await ordersService.getOrderById(orderId)
                 setOrder(orderData)
             } catch (err: any) {
-                console.error("Error fetching order:", err)
-                setError("Impossible de récupérer les détails de la commande")
+                debugLog("Error fetching order:", err)
+                const errorMessage = err.response?.data?.message || err.message || "Impossible de récupérer les détails de la commande"
+                setError(errorMessage)
             } finally {
                 setLoading(false)
             }

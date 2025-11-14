@@ -14,6 +14,7 @@ import { useCart } from "@/context/cart.context"
 import { ordersService } from "@/lib/api/services/orders.service"
 import { ShippingAddress } from "@/lib/api/definitions"
 import { toast } from "sonner"
+import { debugLog } from "@/lib/utils"
 
 export default function CheckoutPage() {
     const router = useRouter()
@@ -64,13 +65,18 @@ export default function CheckoutPage() {
         try {
             const order = await ordersService.createOrder(shippingAddress)
             
-            // Clear cart from context
-            clearCart()
+            // Clear cart from context (backend already clears it, but we sync the frontend state)
+            try {
+                await clearCart()
+            } catch (clearError) {
+                // Cart clearing in frontend is not critical, backend already cleared it
+                debugLog("Frontend cart clear error (non-critical):", clearError)
+            }
             
             toast.success("Commande créée avec succès!")
             router.push(`/orders/confirmation?orderId=${order._id}`)
         } catch (error: any) {
-            console.error("Order creation error:", error)
+            debugLog("Order creation error:", error)
             const message = error.response?.data?.message || error.message || "Erreur lors de la création de la commande"
             toast.error(message)
         } finally {

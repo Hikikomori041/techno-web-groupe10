@@ -8,6 +8,7 @@ import {Header} from "@/app/_ui/commun/header";
 import {Button} from "@/components/ui/button";
 import {productsService} from "@/lib/api/services/products.service";
 import {Product, ProductFilters} from "@/lib/api/definitions";
+import { debugLog } from "@/lib/utils";
 
 export default function Page() {
     const [filters, setFilters] = useState<ProductFilters>({});
@@ -25,21 +26,29 @@ export default function Page() {
 
         try {
             const nextPage = reset ? 1 : page;
-            console.log('📡 Fetching products:', { page: nextPage, filters });
+            debugLog("Fetching products", { page: nextPage, filters });
             
             const data = await productsService.filterProducts(nextPage, 12, filters);
             
-            setProducts((prev) => (reset ? data.products : [...prev, ...data.products]));
+            setProducts((prev) => {
+                if (reset) {
+                    return data.products;
+                }
+                // Deduplicate products by _id to prevent duplicate keys
+                const existingIds = new Set(prev.map(p => p._id));
+                const newProducts = data.products.filter(p => p._id && !existingIds.has(p._id));
+                return [...prev, ...newProducts];
+            });
             setHasMore(data.hasMore);
             setPage(nextPage + 1);
             
-            console.log('✅ Products loaded:', { 
-                count: data.products.length, 
+            debugLog("Products loaded", {
+                count: data.products.length,
                 total: data.total,
-                hasMore: data.hasMore 
+                hasMore: data.hasMore
             });
         } catch (error) {
-            console.error('❌ Error fetching products:', error);
+            debugLog('Error fetching products:', error);
         } finally {
             setLoading(false);
             setInitialLoad(false);

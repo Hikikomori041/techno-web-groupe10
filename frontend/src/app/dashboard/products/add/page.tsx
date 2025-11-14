@@ -15,6 +15,7 @@ import { productsService } from "@/lib/api/services/products.service"
 import { categoriesService } from "@/lib/api/services/categories.service"
 import { Category } from "@/lib/api/definitions"
 import { toast } from "sonner"
+import { debugLog } from "@/lib/utils"
 import { useEffect } from "react"
 
 export default function AddProductPage() {
@@ -38,9 +39,16 @@ export default function AddProductPage() {
         const fetchCategories = async () => {
             try {
                 const data = await categoriesService.getAllCategories()
-                setCategories(data.filter(cat => cat.isActive))
+                debugLog("Fetched categories:", data.map(c => ({ _id: c._id, id: (c as any).id, name: c.name, isActive: c.isActive })))
+                // Filter active categories and ensure they have valid IDs
+                const validCategories = data.filter(cat => {
+                    const catId = cat._id || (cat as any).id;
+                    return cat.isActive && catId && String(catId).trim() !== '';
+                })
+                debugLog("Valid categories:", validCategories.map(c => ({ _id: c._id, name: c.name })))
+                setCategories(validCategories)
             } catch (error) {
-                console.error("Error fetching categories:", error)
+                debugLog("Error fetching categories:", error)
                 toast.error("Erreur lors du chargement des catégories")
             } finally {
                 setLoadingCategories(false)
@@ -166,7 +174,7 @@ export default function AddProductPage() {
                 specifications: validSpecs,
             }
 
-            console.log('📦 Creating product with data:', productData)
+            debugLog("Creating product with data", productData)
 
             await productsService.createProduct(productData)
 
@@ -243,26 +251,39 @@ export default function AddProductPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="categoryId">Catégorie *</Label>
                                 <Select
-                                    value={formData.categoryId || "placeholder"}
+                                    value={formData.categoryId || undefined}
                                     onValueChange={(value) => {
-                                        if (value !== "placeholder") {
-                                            handleInputChange("categoryId", value)
-                                            console.log('✅ Category selected:', value)
-                                        }
+                                        handleInputChange("categoryId", value)
+                                        debugLog("Category selected", value)
                                     }}
                                 >
                                     <SelectTrigger id="categoryId" className={!formData.categoryId ? "text-muted-foreground" : ""}>
-                                        <SelectValue placeholder="Sélectionnez une catégorie" />
+                                        <SelectValue placeholder={loadingCategories ? "Chargement..." : "Sélectionnez une catégorie"} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="placeholder" disabled>
-                                            {loadingCategories ? "Chargement..." : "-- Sélectionnez une catégorie --"}
-                                        </SelectItem>
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat._id} value={cat._id}>
-                                                {cat.name}
+                                        {loadingCategories ? (
+                                            <SelectItem value="loading" disabled>
+                                                Chargement...
                                             </SelectItem>
-                                        ))}
+                                        ) : categories.length === 0 ? (
+                                            <SelectItem value="no-categories" disabled>
+                                                Aucune catégorie disponible
+                                            </SelectItem>
+                                        ) : (
+                                            categories
+                                                .filter(category => {
+                                                    const catId = category._id || (category as any).id;
+                                                    return catId && String(catId).trim() !== '';
+                                                })
+                                                .map((cat) => {
+                                                    const catId = cat._id || (cat as any).id;
+                                                    return (
+                                                        <SelectItem key={String(catId)} value={String(catId)}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    );
+                                                })
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 {!formData.categoryId && (

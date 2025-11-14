@@ -22,7 +22,7 @@ import {DashboardStats, User} from "@/lib/api/definitions";
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import {Footer} from "@/app/_ui/commun/footer";
+import {debugLog} from "@/lib/utils";
 
 
 export default function DashboardPage() {
@@ -61,10 +61,68 @@ export default function DashboardPage() {
     const fetchStats = async () => {
         try {
             const statsData = await statsService.getDashboardStats()
-            setStats(statsData)
+            debugLog("Dashboard stats fetched:", {
+                revenue: statsData.revenue,
+                orders: statsData.orders,
+                revenueByDayCount: statsData.revenueByDay?.length || 0,
+                revenueByDaySample: statsData.revenueByDay?.slice(0, 3)
+            })
+            // Ensure revenueByDay is an array and has proper format
+            if (statsData.revenueByDay && Array.isArray(statsData.revenueByDay)) {
+                debugLog("Revenue by day data:", statsData.revenueByDay)
+                // Fill in missing days for better graph visualization
+                const filledRevenueByDay = fillMissingDays(statsData.revenueByDay)
+                debugLog("Filled revenue by day:", filledRevenueByDay.slice(0, 5))
+                setStats({
+                    ...statsData,
+                    revenueByDay: filledRevenueByDay
+                })
+            } else {
+                debugLog("No revenueByDay data or not an array")
+                setStats(statsData)
+            }
         } catch (err) {
-            console.error("Failed to fetch stats:", err)
+            debugLog("Failed to fetch stats:", err)
+            setError("Failed to load statistics")
         }
+    }
+
+    // Fill in missing days in the last 30 days with zero revenue
+    const fillMissingDays = (revenueData: Array<{date: string; revenue: number; orders: number}>) => {
+        const daysMap = new Map<string, {date: string; revenue: number; orders: number}>()
+        
+        // Add existing data
+        revenueData.forEach(day => {
+            // Handle both YYYY-MM-DD and ISO date formats
+            let dateStr = day.date
+            if (dateStr.includes('T')) {
+                dateStr = dateStr.split('T')[0]
+            }
+            // Ensure date is in YYYY-MM-DD format
+            if (dateStr.length > 10) {
+                dateStr = dateStr.substring(0, 10)
+            }
+            const revenue = typeof day.revenue === 'number' ? day.revenue : 0
+            const orders = typeof day.orders === 'number' ? day.orders : 0
+            daysMap.set(dateStr, {date: dateStr, revenue, orders})
+        })
+        
+        // Fill in last 30 days
+        const filled: Array<{date: string; revenue: number; orders: number}> = []
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date()
+            date.setDate(date.getDate() - i)
+            date.setHours(0, 0, 0, 0)
+            const dateStr = date.toISOString().split('T')[0]
+            
+            if (daysMap.has(dateStr)) {
+                filled.push(daysMap.get(dateStr)!)
+            } else {
+                filled.push({date: dateStr, revenue: 0, orders: 0})
+            }
+        }
+        
+        return filled
     }
 
     const handleLogout = async () => {
@@ -210,36 +268,66 @@ export default function DashboardPage() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-64 flex items-end justify-between gap-1">
-                                        {stats.revenueByDay.length > 0 ? (
-                                            stats.revenueByDay.map((day, index) => {
-                                                const maxRevenue = Math.max(...stats.revenueByDay.map((d) => d.revenue))
-                                                const height = (day.revenue / maxRevenue) * 100
-                                                return (
-                                                    <div key={index}
-                                                         className="flex-1 flex flex-col items-center gap-2 group">
-                                                        <div
-                                                            className="w-full bg-primary hover:bg-primary/80 rounded-t transition-all cursor-pointer relative"
-                                                            style={{height: `${height}%`}}
-                                                            title={`${formatDate(day.date)}: ${formatPrice(day.revenue)} (${day.orders} orders)`}
-                                                        >
-                                                            <div
-                                                                className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground text-xs px-2 py-1 rounded whitespace-nowrap border">
-                                                                {formatPrice(day.revenue)}
+                                    <div className="h-64 flex items-end justify-between gap-0.5 pb-8 px-2 overflow-x-auto">
+                                        {stats.revenueByDay && stats.revenueByDay.length > 0 ? (
+                                            (() => {
+                                                const revenues = stats.revenueByDay.map((d) => Number(d.revenue) || 0)
+                                                const maxRevenue = Math.max(...revenues, 1) // Ensure at least 1 to avoid division by zero
+                                                const hasData = revenues.some(r => r > 0)
+                                                
+                                                debugLog("Graph rendering:", {
+                                                    maxRevenue,
+                                                    hasData,
+                                                    revenuesSample: revenues.slice(0, 5),
+                                                    totalDays: stats.revenueByDay.length
+                                                })
+                                                
+                                                return hasData ? (
+                                                    stats.revenueByDay.map((day, index) => {
+                                                        const revenue = Number(day.revenue) || 0
+                                                        const heightPercent = maxRevenue > 0 ? Math.max((revenue / maxRevenue) * 100, 3) : 0 // Minimum 3% height for visibility
+                                                        const minHeightPx = revenue > 0 ? '8px' : '0'
+                                                        return (
+                                                            <div key={`${day.date}-${index}`}
+                                                                 className="flex-1 flex flex-col items-center gap-1 group min-w-[6px] max-w-[12px]">
+                                                                <div
+                                                                    className="w-full bg-gradient-to-t from-primary via-primary/90 to-accent hover:from-primary/90 hover:via-primary/80 hover:to-accent/80 rounded-t transition-all cursor-pointer relative shadow-md hover:shadow-lg"
+                                                                    style={{
+                                                                        height: `${heightPercent}%`,
+                                                                        minHeight: minHeightPx
+                                                                    }}
+                                                                    title={`${formatDate(day.date)}: ${formatPrice(revenue)} (${day.orders || 0} orders)`}
+                                                                >
+                                                                    <div
+                                                                        className="absolute -top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground text-xs px-2 py-1.5 rounded whitespace-nowrap border shadow-lg z-10 pointer-events-none">
+                                                                        <div className="font-semibold text-primary">{formatPrice(revenue)}</div>
+                                                                        <div className="text-xs text-muted-foreground mt-0.5">{day.orders || 0} order{day.orders !== 1 ? 's' : ''}</div>
+                                                                        <div className="text-xs text-muted-foreground">{formatDate(day.date)}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {index % 7 === 0 && (
+                                                                    <span
+                                                                        className="text-[10px] text-muted-foreground whitespace-nowrap -rotate-45 origin-center mt-1">
+                                        {formatDate(day.date)}
+                                      </span>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                        {index % 5 === 0 && (
-                                                            <span
-                                                                className="text-xs text-muted-foreground rotate-45 origin-left mt-2">
-                                {formatDate(day.date)}
-                              </span>
-                                                        )}
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <div className="w-full text-center py-8">
+                                                        <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50"/>
+                                                        <p className="text-muted-foreground font-medium">No revenue data available</p>
+                                                        <p className="text-xs text-muted-foreground mt-2">Complete some orders to see revenue trends</p>
                                                     </div>
                                                 )
-                                            })
+                                            })()
                                         ) : (
-                                            <p className="text-muted-foreground w-full text-center">No revenue data
-                                                yet</p>
+                                            <div className="w-full text-center py-8">
+                                                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50"/>
+                                                <p className="text-muted-foreground font-medium">No revenue data available</p>
+                                                <p className="text-xs text-muted-foreground mt-2">Complete some orders to see revenue trends</p>
+                                            </div>
                                         )}
                                     </div>
                                 </CardContent>
@@ -542,7 +630,6 @@ export default function DashboardPage() {
                     )}
                 </div>
             </div>
-            <Footer/>
         </div>
     )
 }

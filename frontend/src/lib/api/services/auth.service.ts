@@ -41,8 +41,17 @@ export const authService = {
 
     // Check if user is authenticated
     async isAuthenticated(): Promise<AuthCheckResponse> {
-        const res = await apiClient.get(ENDPOINTS.AUTH.CHECK, ENDPOINTS.CREDENTIALS.INCLUDE);
-        return res.data;
+        try {
+            const res = await apiClient.get(ENDPOINTS.AUTH.CHECK, ENDPOINTS.CREDENTIALS.INCLUDE);
+            return res.data;
+        } catch (error: any) {
+            // 401 is expected when user is not authenticated - return false instead of throwing
+            if (error?.response?.status === 401) {
+                return { authenticated: false };
+            }
+            // For other errors, rethrow
+            throw error;
+        }
     },
 
 

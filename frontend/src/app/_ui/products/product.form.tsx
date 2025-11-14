@@ -89,18 +89,32 @@ export function ProductForm({ editForm, setEditForm, categories }: ProductFormPr
             <div className="grid gap-2">
                 <Label htmlFor="id_categorie">Category *</Label>
                 <Select
-                    value={editForm.categoryId}
+                    value={editForm.categoryId || undefined}
                     onValueChange={(value) => setEditForm({ ...editForm, categoryId: value })}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                        {categories?.map((cat) => (
-                            <SelectItem key={cat._id} value={cat._id}>
-                                {cat.name}
+                        {!categories || categories.length === 0 ? (
+                            <SelectItem value="no-categories" disabled>
+                                No categories available
                             </SelectItem>
-                        ))}
+                        ) : (
+                            categories
+                                .filter(category => {
+                                    const catId = category._id || (category as any).id;
+                                    return catId && String(catId).trim() !== '';
+                                })
+                                .map((cat) => {
+                                    const catId = cat._id || (cat as any).id;
+                                    return (
+                                        <SelectItem key={String(catId)} value={String(catId)}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    );
+                                })
+                        )}
                     </SelectContent>
                 </Select>
             </div>

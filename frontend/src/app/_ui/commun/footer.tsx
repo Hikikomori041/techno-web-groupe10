@@ -9,10 +9,8 @@ export function Footer() {
                     {/* Brand */}
                     <div>
                         <div className="flex items-center space-x-2 mb-4">
-                            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                                <span className="text-primary-foreground font-bold text-lg">T</span>
-                            </div>
-                            <span className="font-bold text-xl">TechStore</span>
+                            <img src="/favicon.ico" alt="achetez.com" className="h-8 w-8" />
+                            <span className="font-bold text-xl">achetez.com</span>
                         </div>
                         <p className="text-muted-foreground text-sm leading-relaxed">
                             Your trusted destination for premium tech products and accessories.
@@ -142,7 +140,7 @@ export function Footer() {
                 </div>
 
                 <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-                    <p>&copy; {new Date().getFullYear()} TechStore. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} achetez.com. All rights reserved.</p>
                 </div>
             </div>
         </footer>
