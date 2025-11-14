@@ -27,7 +27,7 @@ export const productsService = {
         total: number;
         hasMore: boolean;
     }> => {
-        const params: Record<string, any> = {
+        const params: Record<string, string | number | boolean | undefined> = {
             page,
             limit,
         };

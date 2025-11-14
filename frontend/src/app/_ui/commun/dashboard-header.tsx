@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect, useState} from "react";
-import {Menu, User, LogOut, BarChart3} from "lucide-react";
+import {Menu, User, LogOut} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {
@@ -78,6 +78,7 @@ export function DashboardHeader() {
                 <div className="flex h-16 items-center justify-between">
                     {/* ---------- Logo ---------- */}
                     <Link href="/" className="flex items-center space-x-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={"/favicon.ico"} height={"80px"} width={"80px"} alt="Logo"/>
                     </Link>
 

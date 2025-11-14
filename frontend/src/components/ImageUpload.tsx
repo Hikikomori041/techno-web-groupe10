@@ -57,9 +57,10 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
             
             onChange([...images, ...newImageUrls])
             toast.success(`${validFiles.length} image(s) téléchargée(s) avec succès`)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload error:', error)
-            toast.error(error.response?.data?.message || "Erreur lors du téléchargement")
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Erreur lors du téléchargement"
+            toast.error(message)
         } finally {
             setUploading(false)
             // Reset input
@@ -117,7 +118,9 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
                     {images.map((imageUrl, index) => (
                         <Card key={index} className="relative group overflow-hidden">
                             <div className="aspect-square bg-muted">
-                                <img
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                                     src={imageUrl}
                                     alt={`Product ${index + 1}`}
                                     className="w-full h-full object-cover"

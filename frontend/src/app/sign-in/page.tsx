@@ -28,12 +28,12 @@ export default function SignInPage() {
         e.preventDefault();
         try {
             // Use auth service instead of direct fetch
-            const response = await authService.login(formData);
+            await authService.login(formData);
             toast.success("login successful");
 
             router.push(`/products`);
-        } catch (err: any) {
-            const message = err?.message ?? "Login failed. Please try again."
+        } catch (err: unknown) {
+            const message = (err as { message?: string })?.message ?? "Login failed. Please try again."
             toast.error(message)
             debugLog("Sign-in error", err)
         } finally {
@@ -60,7 +60,9 @@ export default function SignInPage() {
                     {/* Logo */}
                     <div className="flex justify-center mb-6">
                         <Link href="/" className="flex items-center justify-center">
-                            <img src="/favicon.ico" alt="achetez.com" className="h-24 w-24" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.ico" alt="achetez.com" className="h-24 w-24" />
                         </Link>
                     </div>
 
@@ -141,7 +143,7 @@ export default function SignInPage() {
 
                     {/* Sign Up Link */}
                     <p className="text-center text-sm text-muted-foreground mt-6">
-                        Don't have an account?{" "}
+                        Don&apos;t have an account?{" "}
                         <Link href="/sign-up" className="text-accent hover:underline font-medium">
                             Sign up
                         </Link>

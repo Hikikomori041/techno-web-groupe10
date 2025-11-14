@@ -46,10 +46,10 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
             try {
                 const data = await categoriesService.getAllCategories()
                 debugLog("Fetched categories:", data)
-                const activeCategories = data.filter(cat => cat.isActive && (cat._id || cat.id))
-                debugLog("Active categories:", activeCategories.map(c => ({ _id: c._id, id: (c as any).id, name: c.name })))
+                const activeCategories = data.filter(cat => cat.isActive && cat._id)
+                debugLog("Active categories:", activeCategories.map(c => ({ _id: c._id, name: c.name })))
                 setCategories(activeCategories)
-            } catch (error) {
+            } catch (error: unknown) {
                 debugLog("Error fetching categories:", error)
             } finally {
                 setLoadingCategories(false)
@@ -79,7 +79,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
         // Remove undefined values
         const cleanFilters = Object.fromEntries(
-            Object.entries(filters).filter(([_, v]) => v !== undefined)
+            Object.entries(filters).filter(([, v]) => v !== undefined)
         ) as ProductFilters
 
         debugLog("Filter changes:", { categoryId, cleanFilters })
@@ -178,11 +178,10 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
                             ) : (
                                 categories
                                     .filter(category => {
-                                        const catId = category._id || (category as any).id;
-                                        return catId && String(catId).trim() !== '';
+                                        return category._id && String(category._id).trim() !== '';
                                     })
                                     .map((category) => {
-                                        const catId = category._id || (category as any).id;
+                                        const catId = category._id;
                                         return (
                                             <SelectItem 
                                                 key={String(catId)} 

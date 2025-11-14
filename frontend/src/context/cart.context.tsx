@@ -108,11 +108,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                     
                     if (typeof item.productId === 'object' && item.productId !== null) {
                         // Product is an object
-                        productId = item.productId._id || item.productId.id || '';
+                        productId = item.productId._id || '';
                         productName = item.productId.nom || 'Unknown Product';
-                    } else {
+                    } else if (typeof item.productId === 'string') {
                         // Product ID is a string
-                        productId = item.productId?.toString() || '';
+                        productId = item.productId;
+                    } else {
+                        productId = '';
                     }
                     
                     if (!productId) {
@@ -184,9 +186,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                         loadCartFromLocalStorage();
                     }
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Only log non-401 errors (401 is handled gracefully in authService)
-                if (error?.response?.status !== 401) {
+                if ((error as { response?: { status?: number } })?.response?.status !== 401) {
                     debugLog("Error initializing cart:", error);
                 }
                 // Always fall back to local storage on any error
@@ -227,9 +229,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                     loadCartFromLocalStorage();
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Silently handle auth check errors
-            if (error?.response?.status !== 401) {
+            if ((error as { response?: { status?: number } })?.response?.status !== 401) {
                 debugLog("Error checking auth status:", error);
             }
         }
@@ -321,14 +323,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 toast.success("Item added to cart");
                 toast.info("Sign in to save your cart", { duration: 3000 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error adding item to cart:", error);
             debugLog("Error details:", {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
+                message: (error as { message?: string })?.message,
+                response: (error as { response?: { data?: unknown } })?.response?.data,
+                status: (error as { response?: { status?: number } })?.response?.status,
             });
-            const errorMessage = error.response?.data?.message || error.message || "Failed to add item to cart";
+            const errorMessage = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (error as { message?: string })?.message || "Failed to add item to cart";
             toast.error(errorMessage);
         }
     };

@@ -28,30 +28,6 @@ import {toast} from "sonner";
 import {debugLog} from "@/lib/utils";
 
 
-const getStatusConfig = (status: string) => {
-    const configs: Record<
-        string,
-        { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
-    > = {
-        pending: {label: "Pending", variant: "secondary", icon: Clock},
-        preparation: {label: "In Preparation", variant: "default", icon: Package},
-        payment_confirmed: {label: "Payment Confirmed", variant: "default", icon: CreditCard},
-        shipped: {label: "Shipped", variant: "default", icon: Truck},
-        delivered: {label: "Delivered", variant: "default", icon: CheckCircle},
-        cancelled: {label: "Cancelled", variant: "destructive", icon: XCircle},
-    }
-    return configs[status] || configs.pending
-}
-
-const getPaymentConfig = (paymentStatus: string) => {
-    const configs: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-        pending: {label: "Pending", variant: "secondary"},
-        paid: {label: "Paid", variant: "default"},
-        failed: {label: "Failed", variant: "destructive"},
-        refunded: {label: "Refunded", variant: "outline"},
-    }
-    return configs[paymentStatus] || configs.pending
-}
 
 export default function AdminOrdersPage() {
     const router = useRouter()
@@ -65,6 +41,7 @@ export default function AdminOrdersPage() {
 
     useEffect(() => {
         checkAuthAndFetchOrders()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const checkAuthAndFetchOrders = async () => {
@@ -84,7 +61,7 @@ export default function AdminOrdersPage() {
 
             setUser(result.user)
             await fetchOrders()
-        } catch (err) {
+        } catch {
             setError("Authentication failed")
             router.push("/sign-in")
         }
@@ -95,15 +72,15 @@ export default function AdminOrdersPage() {
             setLoading(true)
             const ordersData = await ordersService.getAllOrders()
             setOrders(ordersData)
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            setError((err as { message?: string })?.message || "Failed to load orders")
         } finally {
             setLoading(false)
         }
     }
 
     const getOrderId = (order: Order): string => {
-        return order._id ? String(order._id) : (order.id ? String(order.id) : '');
+        return String(order._id);
     }
 
     const handleUpdateStatus = async (order: Order, newStatus: string) => {
@@ -118,9 +95,9 @@ export default function AdminOrdersPage() {
             await ordersService.updateOrderStatus(orderId, newStatus)
             toast.success("Order status updated successfully")
             await fetchOrders()
-        } catch (err: any) {
+        } catch (err: unknown) {
             debugLog("Error updating order status:", err)
-            const errorMessage = err.response?.data?.message || err.message || "Failed to update order status"
+            const errorMessage = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (err as { message?: string })?.message || "Failed to update order status"
             toast.error(errorMessage)
         } finally {
             setUpdatingOrder(null)
@@ -139,9 +116,9 @@ export default function AdminOrdersPage() {
             await ordersService.updatePaymentStatus(orderId, newPaymentStatus)
             toast.success("Payment status updated successfully")
             await fetchOrders()
-        } catch (err: any) {
+        } catch (err: unknown) {
             debugLog("Error updating payment status:", err)
-            const errorMessage = err.response?.data?.message || err.message || "Failed to update payment status"
+            const errorMessage = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (err as { message?: string })?.message || "Failed to update payment status"
             toast.error(errorMessage)
         } finally {
             setUpdatingOrder(null)
@@ -165,9 +142,9 @@ export default function AdminOrdersPage() {
         })
     }
 
-    // Deduplicate orders by _id or id to ensure unique keys
+    // Deduplicate orders by _id to ensure unique keys
     const uniqueOrders = orders.reduce((acc, order) => {
-        const orderId = order._id ? String(order._id) : (order.id ? String(order.id) : null);
+        const orderId = order._id ? String(order._id) : null;
         if (orderId && !acc.seen.has(orderId)) {
             acc.seen.add(orderId);
             acc.unique.push(order);
@@ -356,11 +333,8 @@ export default function AdminOrdersPage() {
                             </Card>
                         ) : (
                             filteredOrders.map((order, index) => {
-                                const statusConfig = getStatusConfig(order.status)
-                                const paymentConfig = getPaymentConfig(order.paymentStatus)
-                                const StatusIcon = statusConfig.icon
-                                // Ensure unique key - use _id, id, or fallback to index
-                                const orderKey = order._id ? String(order._id) : (order.id ? String(order.id) : `order-${index}`)
+                                // Ensure unique key - use _id or fallback to index
+                                const orderKey = order._id ? String(order._id) : `order-${index}`
 
                                 return (
                                     <Card key={orderKey} className="hover:shadow-lg transition-shadow">
@@ -370,7 +344,7 @@ export default function AdminOrdersPage() {
                                                     <p className="text-xs text-muted-foreground mb-1">{formatDate(order.createdAt)}</p>
                                                     <p className="text-lg font-bold text-foreground font-mono">{order.orderNumber}</p>
                                                     <p className="text-sm text-muted-foreground mt-1">
-                                                        Customer: {order.userId?.firstName} {order.userId?.lastName}
+                                                        Customer: {typeof order.userId === 'object' && order.userId ? `${order.userId.firstName || ''} ${order.userId.lastName || ''}`.trim() : 'N/A'}
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
@@ -470,10 +444,8 @@ export default function AdminOrdersPage() {
                                             </TableRow>
                                         ) : (
                                             filteredOrders.map((order, index) => {
-                                                const statusConfig = getStatusConfig(order.status)
-                                                const paymentConfig = getPaymentConfig(order.paymentStatus)
                                                 // Ensure unique key - use _id, id, or fallback to index
-                                                const orderKey = order._id ? String(order._id) : (order.id ? String(order.id) : `order-${index}`)
+                                                const orderKey = order._id ? String(order._id) : `order-${index}`
 
                                                 return (
                                                     <TableRow key={orderKey} className="hover:bg-muted/50">
@@ -483,10 +455,10 @@ export default function AdminOrdersPage() {
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="text-sm text-foreground">
-                                                                {order.userId?.firstName} {order.userId?.lastName}
+                                                                {typeof order.userId === 'object' && order.userId ? `${order.userId.firstName || ''} ${order.userId.lastName || ''}`.trim() : 'N/A'}
                                                             </div>
                                                             <div
-                                                                className="text-xs text-muted-foreground">{order.userId?.email}</div>
+                                                                className="text-xs text-muted-foreground">{typeof order.userId === 'object' && order.userId ? order.userId.email : 'N/A'}</div>
                                                         </TableCell>
                                                         <TableCell className="text-sm text-muted-foreground">
                                                             {formatDate(order.createdAt)}

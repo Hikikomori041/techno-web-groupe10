@@ -46,6 +46,7 @@ export default function DashboardOrderDetailPage() {
             setError("Order ID is missing")
             setLoading(false)
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderId])
 
     const fetchOrder = async () => {
@@ -80,9 +81,9 @@ export default function DashboardOrderDetailPage() {
             } else {
                 setOrder(orderData)
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             debugLog("Error fetching order:", err)
-            const errorMessage = err.response?.data?.message || err.message || "Failed to load order"
+            const errorMessage = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (err as { message?: string })?.message || "Failed to load order"
             setError(errorMessage)
             toast.error(errorMessage)
         } finally {
@@ -92,7 +93,7 @@ export default function DashboardOrderDetailPage() {
 
     const getOrderId = (order: Order | null): string => {
         if (!order) return orderId || '';
-        return order._id ? String(order._id) : (order.id ? String(order.id) : orderId || '');
+        return String(order._id);
     }
 
     const handleCancelOrder = async () => {
@@ -111,9 +112,9 @@ export default function DashboardOrderDetailPage() {
             toast.success("Order cancelled successfully")
             // Refresh order data
             await fetchOrder()
-        } catch (err: any) {
+        } catch (err: unknown) {
             debugLog("Error cancelling order:", err)
-            const errorMessage = err.response?.data?.message || err.message || "Failed to cancel order"
+            const errorMessage = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (err as { message?: string })?.message || "Failed to cancel order"
             toast.error(errorMessage)
         } finally {
             setCancelling(false)

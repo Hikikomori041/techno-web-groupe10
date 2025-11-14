@@ -103,11 +103,11 @@ export function ProductForm({ editForm, setEditForm, categories }: ProductFormPr
                         ) : (
                             categories
                                 .filter(category => {
-                                    const catId = category._id || (category as any).id;
+                                    const catId = category._id || (category as Category & { id?: string }).id;
                                     return catId && String(catId).trim() !== '';
                                 })
                                 .map((cat) => {
-                                    const catId = cat._id || (cat as any).id;
+                                    const catId = cat._id || (cat as Category & { id?: string }).id;
                                     return (
                                         <SelectItem key={String(catId)} value={String(catId)}>
                                             {cat.name}

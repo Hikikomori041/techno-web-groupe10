@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle2, Package, MapPin, Clock, Loader2 } from "lucide-react"
@@ -13,7 +13,7 @@ import { ordersService } from "@/lib/api/services/orders.service"
 import { Order } from "@/lib/api/definitions"
 import { debugLog } from "@/lib/utils"
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const orderId = searchParams.get("orderId")
@@ -32,9 +32,9 @@ export default function OrderConfirmationPage() {
             try {
                 const orderData = await ordersService.getOrderById(orderId)
                 setOrder(orderData)
-            } catch (err: any) {
+            } catch (err: unknown) {
                 debugLog("Error fetching order:", err)
-                const errorMessage = err.response?.data?.message || err.message || "Impossible de récupérer les détails de la commande"
+                const errorMessage = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (err as { message?: string })?.message || "Impossible de récupérer les détails de la commande"
                 setError(errorMessage)
             } finally {
                 setLoading(false)
@@ -222,7 +222,7 @@ export default function OrderConfirmationPage() {
                                 </p>
                                 <p className="text-blue-700 dark:text-blue-300">
                                     Vous recevrez des notifications par e-mail à chaque étape de votre commande.
-                                    Vous pouvez également suivre l'état de votre commande dans votre espace personnel.
+                                    Vous pouvez également suivre l&apos;état de votre commande dans votre espace personnel.
                                 </p>
                             </div>
                         </CardContent>
@@ -231,6 +231,25 @@ export default function OrderConfirmationPage() {
             </div>
             <Footer />
         </div>
+    )
+}
+
+export default function OrderConfirmationPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-muted/30">
+                <Header />
+                <div className="container mx-auto px-4 py-16 lg:px-8">
+                    <div className="flex flex-col items-center justify-center text-center space-y-4">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className="text-muted-foreground">Chargement...</p>
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        }>
+            <OrderConfirmationContent />
+        </Suspense>
     )
 }
 

@@ -75,9 +75,9 @@ export default function CheckoutPage() {
             
             toast.success("Commande créée avec succès!")
             router.push(`/orders/confirmation?orderId=${order._id}`)
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Order creation error:", error)
-            const message = error.response?.data?.message || error.message || "Erreur lors de la création de la commande"
+            const message = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (error as { message?: string })?.message || "Erreur lors de la création de la commande"
             toast.error(message)
         } finally {
             setIsSubmitting(false)

@@ -9,7 +9,9 @@ export function Footer() {
                     {/* Brand */}
                     <div>
                         <div className="flex items-center space-x-2 mb-4">
-                            <img src="/favicon.ico" alt="achetez.com" className="h-8 w-8" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.ico" alt="achetez.com" className="h-8 w-8" />
                             <span className="font-bold text-xl">achetez.com</span>
                         </div>
                         <p className="text-muted-foreground text-sm leading-relaxed">

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { Laptop, Smartphone, Headphones, Monitor } from "lucide-react"
+import { Laptop, Smartphone, Headphones } from "lucide-react"
 
 const categories = [
   {

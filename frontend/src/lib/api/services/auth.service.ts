@@ -44,9 +44,9 @@ export const authService = {
         try {
             const res = await apiClient.get(ENDPOINTS.AUTH.CHECK, ENDPOINTS.CREDENTIALS.INCLUDE);
             return res.data;
-        } catch (error: any) {
+        } catch (error: unknown) {
             // 401 is expected when user is not authenticated - return false instead of throwing
-            if (error?.response?.status === 401) {
+            if ((error as { response?: { status?: number } })?.response?.status === 401) {
                 return { authenticated: false };
             }
             // For other errors, rethrow

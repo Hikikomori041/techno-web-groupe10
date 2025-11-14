@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Minus, Plus, ShoppingCart, Loader2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,6 @@ import { debugLog } from "@/lib/utils"
 
 export default function ProductDetailPage() {
     const params = useParams()
-    const router = useRouter()
     const productId = params.id as string
     const { addItemToCart } = useCart()
 
@@ -46,7 +45,7 @@ export default function ProductDetailPage() {
                         debugLog("Error fetching category:", err)
                     }
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 debugLog("Error fetching product:", err)
                 setError("Impossible de charger les détails du produit")
             } finally {
@@ -73,9 +72,10 @@ export default function ProductDetailPage() {
         try {
             await addItemToCart(product._id, quantity)
             toast.success(`${quantity} × ${product.nom} ajouté(s) au panier`)
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error adding to cart:", error)
-            toast.error(error.message || "Erreur lors de l'ajout au panier")
+            const message = (error as { message?: string })?.message || "Erreur lors de l'ajout au panier"
+            toast.error(message)
         } finally {
             setAddingToCart(false)
         }
@@ -140,7 +140,9 @@ export default function ProductDetailPage() {
                         <Card className="overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="aspect-square relative bg-muted">
-                                    <img
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                                         src={images[selectedImage]}
                                         alt={product.nom}
                                         className="w-full h-full object-cover"
@@ -172,7 +174,9 @@ export default function ProductDetailPage() {
                                                 : "border-transparent hover:border-muted-foreground"
                                         }`}
                                     >
-                                        <img
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                                             src={image}
                                             alt={`${product.nom} - Image ${index + 1}`}
                                             className="w-full h-full object-cover"

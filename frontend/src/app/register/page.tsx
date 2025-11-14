@@ -40,8 +40,8 @@ export default function RegisterPage() {
 
       // Redirect to products page
       router.push('/products');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      setError((err as { message?: string })?.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +60,9 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <div className="flex flex-col items-center mb-4">
-            <img src="/favicon.ico" alt="achetez.com" className="h-16 w-16 mb-4" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.ico" alt="achetez.com" className="h-16 w-16 mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               achetez.com
             </h1>

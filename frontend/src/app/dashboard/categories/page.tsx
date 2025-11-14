@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Plus, Edit, Trash2, Loader2, Package, Eye } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { Plus, Edit, Trash2, Loader2, Package } from "lucide-react"
 import { authService } from "@/lib/api/services/auth.service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -45,30 +45,13 @@ export default function CategoriesManagementPage() {
     const [submitting, setSubmitting] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
 
-    useEffect(() => {
-        checkAuthAndFetchCategories()
-    }, [])
-
-    const checkAuthAndFetchCategories = async () => {
-        try {
-            const result = await authService.isAuthenticated()
-            if (result.authenticated && result.user) {
-                setIsAdmin(result.user.roles.includes("admin"))
-            }
-            await fetchCategories()
-        } catch (error) {
-            debugLog("Error checking auth:", error)
-            await fetchCategories()
-        }
-    }
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         setLoading(true)
         try {
             const data = await categoriesService.getAllCategories()
-            // Deduplicate categories by _id or id to ensure unique keys
+            // Deduplicate categories by _id to ensure unique keys
             const uniqueCategories = data.reduce((acc, category) => {
-                const catId = category._id || (category as any).id;
+                const catId = category._id;
                 const catIdStr = catId ? String(catId) : null;
                 if (catIdStr && !acc.seen.has(catIdStr)) {
                     acc.seen.add(catIdStr);
@@ -81,13 +64,30 @@ export default function CategoriesManagementPage() {
             }, { seen: new Set<string>(), unique: [] as Category[] });
             
             setCategories(uniqueCategories.unique)
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error fetching categories:", error)
             toast.error("Erreur lors du chargement des catégories")
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
+
+    const checkAuthAndFetchCategories = useCallback(async () => {
+        try {
+            const result = await authService.isAuthenticated()
+            if (result.authenticated && result.user) {
+                setIsAdmin(result.user.roles.includes("admin"))
+            }
+            await fetchCategories()
+        } catch (error: unknown) {
+            debugLog("Error checking auth:", error)
+            await fetchCategories()
+        }
+    }, [fetchCategories])
+
+    useEffect(() => {
+        checkAuthAndFetchCategories()
+    }, [checkAuthAndFetchCategories])
 
     const handleAddCategory = async () => {
         if (!formData.name.trim()) {
@@ -102,9 +102,10 @@ export default function CategoriesManagementPage() {
             setIsAddDialogOpen(false)
             setFormData({ name: "", description: "", isActive: true })
             await fetchCategories()
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error creating category:", error)
-            toast.error(error.response?.data?.message || "Erreur lors de la création de la catégorie")
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Erreur lors de la création de la catégorie"
+            toast.error(message)
         } finally {
             setSubmitting(false)
         }
@@ -116,7 +117,7 @@ export default function CategoriesManagementPage() {
             return
         }
 
-        const categoryId = selectedCategory._id || (selectedCategory as any).id;
+        const categoryId = selectedCategory._id || (selectedCategory as Category & { id?: string }).id;
         if (!categoryId) {
             toast.error("ID de catégorie invalide")
             return
@@ -130,9 +131,10 @@ export default function CategoriesManagementPage() {
             setSelectedCategory(null)
             setFormData({ name: "", description: "", isActive: true })
             await fetchCategories()
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error updating category:", error)
-            toast.error(error.response?.data?.message || "Erreur lors de la mise à jour de la catégorie")
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Erreur lors de la mise à jour de la catégorie"
+            toast.error(message)
         } finally {
             setSubmitting(false)
         }
@@ -141,7 +143,7 @@ export default function CategoriesManagementPage() {
     const handleDeleteCategory = async () => {
         if (!selectedCategory) return
 
-        const categoryId = selectedCategory._id || (selectedCategory as any).id;
+        const categoryId = selectedCategory._id || (selectedCategory as Category & { id?: string }).id;
         if (!categoryId) {
             toast.error("ID de catégorie invalide")
             return
@@ -154,9 +156,10 @@ export default function CategoriesManagementPage() {
             setIsDeleteDialogOpen(false)
             setSelectedCategory(null)
             await fetchCategories()
-        } catch (error: any) {
+        } catch (error: unknown) {
             debugLog("Error deleting category:", error)
-            toast.error(error.response?.data?.message || "Erreur lors de la suppression de la catégorie")
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Erreur lors de la suppression de la catégorie"
+            toast.error(message)
         } finally {
             setSubmitting(false)
         }
@@ -252,8 +255,8 @@ export default function CategoriesManagementPage() {
                                             // Ensure unique key - use _id, id, or fallback to index
                                             const categoryKey = category._id 
                                                 ? String(category._id) 
-                                                : ((category as any).id 
-                                                    ? String((category as any).id) 
+                                                : ((category as Category & { id?: string }).id 
+                                                    ? String((category as Category & { id?: string }).id) 
                                                     : `category-${index}`)
                                             
                                             return (

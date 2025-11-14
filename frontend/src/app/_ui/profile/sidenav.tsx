@@ -2,7 +2,7 @@ import {Card, CardContent} from "@/components/ui/card";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
-import {CreditCard, LogOut, Package, User} from "lucide-react";
+import {LogOut, Package, User} from "lucide-react";
 import type {User as UserType} from "@/lib/api/definitions";
 import {Separator} from "@/components/ui/separator";
 import {Fragment} from "react";

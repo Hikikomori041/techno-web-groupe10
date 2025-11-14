@@ -40,6 +40,7 @@ export default function OrderDetailPage() {
         if (orderId) {
             fetchOrder()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderId])
 
     const fetchOrder = async () => {
@@ -47,8 +48,8 @@ export default function OrderDetailPage() {
             setLoading(true)
             const orderData = await ordersService.getOrderById(orderId)
             setOrder(orderData)
-        } catch (err: any) {
-            setError(err.message || "Failed to load order")
+        } catch (err: unknown) {
+            setError((err as { message?: string })?.message || "Failed to load order")
         } finally {
             setLoading(false)
         }
@@ -62,8 +63,8 @@ export default function OrderDetailPage() {
             setCancelling(true)
             await ordersService.cancelOrder(orderId)
             alert("Order cancelled successfully")
-        } catch (err: any) {
-            alert(err.message || "Failed to cancel order")
+        } catch (err: unknown) {
+            alert((err as { message?: string })?.message || "Failed to cancel order")
         } finally {
             setCancelling(false)
         }

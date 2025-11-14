@@ -25,6 +25,8 @@ export function HeroSection() {
 
             {/* Decorative element */}
             <div className="absolute bottom-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/modern-tech-devices-abstract-illustration.jpg" alt=""
                      className="w-full h-full object-contain"/>
             </div>

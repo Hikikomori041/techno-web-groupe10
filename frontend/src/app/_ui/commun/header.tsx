@@ -17,11 +17,21 @@ import {authService} from "@/lib/api/services/auth.service";
 import {useCart} from "@/context/cart.context";
 import {useRouter} from "next/navigation";
 
+type UserType = {
+    _id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    provider: 'local' | 'google';
+    roles: string[];
+    picture?: string;
+    createdAt: string;
+    updatedAt: string;
+};
 
 export function Header() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<{ name?: string; email?: string; avatarUrl?: string } | null>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [user, setUser] = useState<UserType | null>(null);
     const {cartCount} = useCart();
     const router = useRouter();
 
@@ -29,7 +39,6 @@ export function Header() {
         await authService.logout();
         setIsAuthenticated(false);
         setUser(null);
-        setIsAdmin(false);
         router.push('/sign-in'); // Redirect to home or login page after logout
     }
 
@@ -41,9 +50,6 @@ export function Header() {
                 if (response.user) {
                     setIsAuthenticated(true);
                     setUser(response.user);
-                    if (response.user.roles.includes("admin")) {
-                        setIsAdmin(true);
-                    }
                 } else {
                     setIsAuthenticated(false);
                 }
@@ -61,7 +67,9 @@ export function Header() {
                 <div className="flex h-16 items-center justify-between">
                     {/* ---------- Logo ---------- */}
                     <Link href="/" className="flex items-center space-x-2">
-                        <img src={"/favicon.ico"} height={"80px"} width={"80px"} alt="Logo"/>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={"/favicon.ico"} height={"80px"} width={"80px"} alt="Logo"/>
                     </Link>
 
                     {/* ---------- Navigation + Actions ---------- */}
@@ -122,7 +130,7 @@ export function Header() {
                                             <Button variant="ghost" className="p-0 rounded-full">
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarFallback>
-                                                        {user?.name?.[0]?.toUpperCase() || <User className="h-4 w-4"/>}
+                                                        {user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || <User className="h-4 w-4"/>}
                                                     </AvatarFallback>
                                                 </Avatar>
                                             </Button>
@@ -131,7 +139,7 @@ export function Header() {
                                         <DropdownMenuContent align="end" className="w-56">
                                             <DropdownMenuLabel>
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium">{user?.name || "User"}</span>
+                                                    <span className="font-medium">{user ? `${user.firstName} ${user.lastName}` : "User"}</span>
                                                     <span className="text-xs text-muted-foreground">{user?.email}</span>
                                                 </div>
                                             </DropdownMenuLabel>

@@ -4,17 +4,14 @@ import {Card, CardHeader, CardTitle, CardDescription, CardContent} from "@/compo
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import {authService} from "@/lib/api/services/auth.service";
-import {ordersService} from "@/lib/api/services/orders.service";
 import {useEffect, useState} from "react";
-import {Order, User} from "@/lib/api/definitions";
-import OrderCard from "@/app/_ui/orders/order-card";
+import {User} from "@/lib/api/definitions";
 import {toast} from "sonner";
 
 export default function ProfilePage() {
 
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
-    const [orders, setOrders] = useState<Order[]>([]);
 
     const checkAuthAndFetchProfile = async () => {
         try {
@@ -27,7 +24,7 @@ export default function ProfilePage() {
 
             const res = await authService.profile();
             setUser(res)
-        } catch (err) {
+        } catch {
             toast.error('Authentication failed');
             router.push('/sign-in');
         }
@@ -35,6 +32,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         checkAuthAndFetchProfile();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -72,13 +70,8 @@ export default function ProfilePage() {
                     <CardDescription>View and track your orders</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        {orders.slice(0, 4).map((order) => (
-                            <OrderCard order={order} key={order._id}/>
-                        ))}
-                    </div>
                     <Button variant="outline"
-                            onClick={() => router.push("/prodile/orders")}
+                            onClick={() => router.push("/profile/orders")}
                             className="w-full mt-4 bg-transparent">
                         View All Orders
                     </Button>

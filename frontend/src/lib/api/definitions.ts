@@ -118,7 +118,7 @@ export interface OrderItem {
 
 export interface Order {
     _id: string;
-    userId: any;
+    userId: string | { _id: string; email: string; firstName?: string; lastName?: string };
     orderNumber: string;
     items: OrderItem[];
     total: number;

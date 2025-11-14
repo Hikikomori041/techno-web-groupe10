@@ -38,7 +38,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
             try {
                 const data = await categoriesService.getAllCategories()
                 setCategories(data)
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error("Error fetching categories:", error)
             } finally {
                 setLoadingCategories(false)
@@ -49,7 +49,7 @@ export function FilterPanel({onChange, onClear}: FilterPanelProps) {
 
     // Update filter and trigger parent update
     const updateFilter = useCallback(
-        (key: keyof ProductFilters, value: any) => {
+        (key: keyof ProductFilters, value: ProductFilters[keyof ProductFilters]) => {
             const updated = {...filters, [key]: value}
             setFilters(updated)
             onChange(updated)

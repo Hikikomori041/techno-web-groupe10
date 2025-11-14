@@ -3,7 +3,6 @@
 import {useEffect, useState} from "react"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
 import {Badge} from "@/components/ui/badge"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {
@@ -46,7 +45,7 @@ export default function UserManagementPage() {
 
             const result = await usersService.getAllUsers()
             setUsers(result)
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error fetching users:", error)
         }
     }
@@ -57,6 +56,7 @@ export default function UserManagementPage() {
         }
 
         loadUsers()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleEditRoles = (user: User) => {
@@ -87,8 +87,8 @@ export default function UserManagementPage() {
             setEditingUser(null);
             toast.success('Roles updated successfully!');
             setIsEditDialogOpen(false);
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to update roles');
+        } catch (err: unknown) {
+            toast.error((err as { message?: string })?.message || 'Failed to update roles');
         } finally {
             setIsEditDialogOpen(false);
         }
@@ -100,8 +100,8 @@ export default function UserManagementPage() {
             await fetchUsers();
             toast.info('User deleted successfully!');
             setIsDeleteDialogOpen(false);
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to delete user');
+        } catch (err: unknown) {
+            toast.error((err as { message?: string })?.message || 'Failed to delete user');
         }
     };
 

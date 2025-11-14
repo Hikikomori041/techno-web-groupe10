@@ -27,7 +27,7 @@ export default function DashboardLayout({children}: { children: ReactNode }){
                 return;
             }
 
-        } catch (err) {
+        } catch {
             toast.error('Authentication failed');
             router.push('/sign-in');
         }
@@ -35,6 +35,7 @@ export default function DashboardLayout({children}: { children: ReactNode }){
 
     useEffect(() => {
         checkAuthAndFetchProfile();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

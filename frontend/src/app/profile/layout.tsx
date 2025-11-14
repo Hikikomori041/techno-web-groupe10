@@ -26,7 +26,7 @@ export default function ProfileLayout({children}: { children: ReactNode }) {
 
             const res = await authService.profile();
             setUser(res)
-        } catch (err) {
+        } catch {
             toast.error('Authentication failed');
             router.push('/sign-in');
         }
@@ -34,6 +34,7 @@ export default function ProfileLayout({children}: { children: ReactNode }) {
 
     useEffect(() => {
         checkAuthAndFetchProfile()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const logout = async () => {

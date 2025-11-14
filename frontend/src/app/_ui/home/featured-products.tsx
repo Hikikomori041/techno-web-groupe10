@@ -32,7 +32,7 @@ export function FeaturedProducts() {
                 // Take first 4 products for featured section
                 const featuredProducts = result.products.slice(0, 4)
                 setProducts(featuredProducts)
-            } catch (err: any) {
+            } catch (err: unknown) {
                 debugLog("Error fetching featured products:", err)
                 setError("Failed to load featured products")
             } finally {
@@ -84,7 +84,9 @@ export function FeaturedProducts() {
                             return (
                                 <Card key={productKey} className="overflow-hidden group hover:shadow-lg transition-shadow h-full flex flex-col">
                                     <div className="aspect-square bg-card overflow-hidden relative">
-                                        <img
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                                             src={product.images?.[0] || "/computer-monitor-display.jpg"}
                                             alt={product.nom}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

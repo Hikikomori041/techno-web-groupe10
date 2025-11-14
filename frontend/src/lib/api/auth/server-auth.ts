@@ -39,9 +39,9 @@ export async function checkAuth(): Promise<AuthCheckResponse | null> {
 }
 
 // Check if user has admin role
-export async function isAdmin(): Promise<any> {
+export async function isAdmin(): Promise<boolean> {
     const user = await getCurrentUser()
-    return user?.roles.includes("admin");
+    return user?.roles.includes("admin") || false;
 }
 
 // Require authentication (throws redirect)

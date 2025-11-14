@@ -34,6 +34,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         checkAuthStatus()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const checkAuthStatus = async () => {
@@ -51,7 +52,7 @@ export default function DashboardPage() {
                     router.push("/sign-in")
                 }, 2000)
             }
-        } catch (err) {
+        } catch {
             setError("Failed to check authentication")
         } finally {
             setIsLoading(false)
@@ -564,11 +565,14 @@ export default function DashboardPage() {
                                 <CardHeader className="border-b">
                                     <div className="flex items-center gap-4">
                                         {user.picture ? (
-                                            <img
-                                                src={user.picture || "/placeholder.svg"}
-                                                alt="Profile"
-                                                className="w-20 h-20 rounded-full border-2 border-primary"
-                                            />
+                                            <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={user.picture || "/placeholder.svg"}
+                                                    alt="Profile"
+                                                    className="w-20 h-20 rounded-full border-2 border-primary"
+                                                />
+                                            </>
                                         ) : (
                                             <div
                                                 className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold">

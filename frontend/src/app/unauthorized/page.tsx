@@ -17,7 +17,7 @@ export default function Unauthorized() {
                     </div>
                     <h2 className="text-3xl font-bold text-foreground mb-4">Access Denied</h2>
                     <p className="text-lg text-muted-foreground mb-8">
-                        Sorry, you don't have permission to access this page. Please sign in or contact support if you believe this
+                        Sorry, you don&apos;t have permission to access this page. Please sign in or contact support if you believe this
                         is an error.
                     </p>
                 </div>

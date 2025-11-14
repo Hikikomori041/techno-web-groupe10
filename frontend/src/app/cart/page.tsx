@@ -66,7 +66,7 @@ export default function CartPage() {
             // Proceed to checkout
             router.push("/checkout")
             toast.success("Proceeding to checkout...")
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Checkout error:", error)
             toast.error("An error occurred. Please try again.")
         } finally {
@@ -100,7 +100,7 @@ export default function CartPage() {
                         <ShoppingBag className="h-24 w-24 text-muted-foreground" />
                         <h1 className="text-3xl font-bold">Your cart is empty</h1>
                         <p className="text-muted-foreground max-w-md">
-                            Looks like you haven't added anything to your cart yet. Start shopping to find amazing
+                            Looks like you haven&apos;t added anything to your cart yet. Start shopping to find amazing
                             products!
                         </p>
                         <Button asChild size="lg" className="mt-4">

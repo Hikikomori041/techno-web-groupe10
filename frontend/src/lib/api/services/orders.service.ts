@@ -42,6 +42,6 @@ export const ordersService = {
 
     // Delete order (admin)
     cancelOrder: async (orderId: string): Promise<void> => {
-        const rest =  await apiClient.delete(ENDPOINTS.ORDERS.DELETE(orderId), ENDPOINTS.CREDENTIALS.INCLUDE);
+        await apiClient.delete(ENDPOINTS.ORDERS.DELETE(orderId), ENDPOINTS.CREDENTIALS.INCLUDE);
     }
 }

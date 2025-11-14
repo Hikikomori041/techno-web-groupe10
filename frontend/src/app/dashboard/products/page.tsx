@@ -51,7 +51,7 @@ export default function ProductManagementPage() {
             debugLog("Fetched products", fetchedProducts.map(p => ({
                 nom: p.nom,
                 id_categorie: p.id_categorie,
-                categoryId: (p as any).categoryId
+                categoryId: (p as Product & { categoryId?: string }).categoryId
             })))
             
             setProducts(fetchedProducts)
@@ -59,7 +59,7 @@ export default function ProductManagementPage() {
             const fetchedCategories = await categoriesService.getAllCategories()
             debugLog("Fetched categories", fetchedCategories.map(c => ({ _id: c._id, name: c.name })))
             setCategories(fetchedCategories)
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error fetching data:", error)
         }
     }
@@ -69,6 +69,7 @@ export default function ProductManagementPage() {
             await fetchProducts()
         }
         loadData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Create a category map for efficient lookup
@@ -323,7 +324,7 @@ export default function ProductManagementPage() {
                         <DialogHeader>
                             <DialogTitle>Delete Product</DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{selectedProduct?.nom}&quot;? This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
@@ -471,7 +472,7 @@ export default function ProductManagementPage() {
             setProducts(fetchedProducts)
             const fetchedCategories = await categoriesService.getAllCategories()
             setCategories(fetchedCategories)
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error fetching data:", error)
         }
     }
@@ -481,6 +482,7 @@ export default function ProductManagementPage() {
             await fetchProducts()
         }
         loadData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Create a category map for efficient lookup
@@ -741,7 +743,7 @@ export default function ProductManagementPage() {
                         <DialogHeader>
                             <DialogTitle>Delete Product</DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{selectedProduct?.nom}&quot;? This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
@@ -1310,7 +1312,7 @@ export default function ProductManagementPage() {
                         <DialogHeader>
                             <DialogTitle>Delete Product</DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to delete "{selectedProduct?.nom}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{selectedProduct?.nom}&quot;? This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>

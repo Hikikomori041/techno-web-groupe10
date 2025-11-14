@@ -38,7 +38,7 @@ export default function SignUpPage() {
         }
 
         try {
-            let registerCredentials: RegisterCredentials = {
+            const registerCredentials: RegisterCredentials = {
                 email: formData.email,
                 password: formData.password,
                 firstName: formData.firstName,
@@ -63,8 +63,8 @@ export default function SignUpPage() {
             }
 
 
-        } catch (err: any) {
-            const message = err?.message || "Registration failed. Please try again."
+        } catch (err: unknown) {
+            const message = (err as { message?: string })?.message || "Registration failed. Please try again."
             toast.error(message)
             debugLog("Registration error", err)
         }
@@ -90,7 +90,9 @@ export default function SignUpPage() {
                     {/* Logo */}
                     <div className="flex justify-center mb-6">
                         <Link href="/" className="flex items-center justify-center">
-                            <img src="/favicon.ico" alt="achetez.com" className="h-24 w-24" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.ico" alt="achetez.com" className="h-24 w-24" />
                         </Link>
                     </div>
 

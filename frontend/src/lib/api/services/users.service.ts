@@ -28,7 +28,7 @@ export const usersService = {
 
     // Delete user (Admin only)
     deleteUser: async (userId: string): Promise<void> => {
-        const res = await apiClient.delete(
+        await apiClient.delete(
             ENDPOINTS.USERS.DELETE(userId),
             ENDPOINTS.CREDENTIALS.INCLUDE
         );

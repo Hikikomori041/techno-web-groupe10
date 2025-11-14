@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState, useRef, useCallback} from "react";
+import {useEffect, useState, useRef} from "react";
 import {Footer} from "@/app/_ui/commun/footer"
 import {ProductGrid} from "@/app/_ui/products/product-grid"
 import {FilterPanel} from "@/app/_ui/products/product-filter-improved"
@@ -47,7 +47,7 @@ export default function Page() {
                 total: data.total,
                 hasMore: data.hasMore
             });
-        } catch (error) {
+        } catch (error: unknown) {
             debugLog('Error fetching products:', error);
         } finally {
             setLoading(false);
@@ -61,6 +61,7 @@ export default function Page() {
         setPage(1);
         setHasMore(true);
         fetchProducts(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
     // Infinite scroll
@@ -82,6 +83,7 @@ export default function Page() {
         return () => {
             if (target) observer.unobserve(target);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasMore, loading, initialLoad]);
 
     return (

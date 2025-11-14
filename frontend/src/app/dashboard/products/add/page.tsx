@@ -39,15 +39,14 @@ export default function AddProductPage() {
         const fetchCategories = async () => {
             try {
                 const data = await categoriesService.getAllCategories()
-                debugLog("Fetched categories:", data.map(c => ({ _id: c._id, id: (c as any).id, name: c.name, isActive: c.isActive })))
+                debugLog("Fetched categories:", data.map(c => ({ _id: c._id, name: c.name, isActive: c.isActive })))
                 // Filter active categories and ensure they have valid IDs
                 const validCategories = data.filter(cat => {
-                    const catId = cat._id || (cat as any).id;
-                    return cat.isActive && catId && String(catId).trim() !== '';
+                    return cat.isActive && cat._id && String(cat._id).trim() !== '';
                 })
                 debugLog("Valid categories:", validCategories.map(c => ({ _id: c._id, name: c.name })))
                 setCategories(validCategories)
-            } catch (error) {
+            } catch (error: unknown) {
                 debugLog("Error fetching categories:", error)
                 toast.error("Erreur lors du chargement des catégories")
             } finally {
@@ -57,7 +56,7 @@ export default function AddProductPage() {
         fetchCategories()
     }, [])
 
-    const handleInputChange = (field: string, value: any) => {
+    const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
@@ -98,9 +97,10 @@ export default function AddProductPage() {
 
             setFormData(prev => ({ ...prev, description }))
             toast.success("Description générée avec succès !")
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error generating description:", error)
-            toast.error(error.message || "Erreur lors de la génération de la description")
+            const message = (error as { message?: string })?.message || "Erreur lors de la génération de la description"
+            toast.error(message)
         } finally {
             setGeneratingDescription(false)
         }
@@ -180,9 +180,10 @@ export default function AddProductPage() {
 
             toast.success("Produit créé avec succès !")
             router.push("/dashboard/products")
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error creating product:", error)
-            toast.error(error.response?.data?.message || "Erreur lors de la création du produit")
+            const message = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (error as { message?: string })?.message || "Erreur lors de la création du produit"
+            toast.error(message)
         } finally {
             setSubmitting(false)
         }
@@ -272,11 +273,10 @@ export default function AddProductPage() {
                                         ) : (
                                             categories
                                                 .filter(category => {
-                                                    const catId = category._id || (category as any).id;
-                                                    return catId && String(catId).trim() !== '';
+                                                    return category._id && String(category._id).trim() !== '';
                                                 })
                                                 .map((cat) => {
-                                                    const catId = cat._id || (cat as any).id;
+                                                    const catId = cat._id;
                                                     return (
                                                         <SelectItem key={String(catId)} value={String(catId)}>
                                                             {cat.name}

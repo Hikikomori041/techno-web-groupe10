@@ -1,7 +1,7 @@
 import {Card, CardContent, CardFooter} from "@/components/ui/card";
 import {ShoppingCart, Info} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {CartItem, Product} from "@/lib/api/definitions";
+import {Product} from "@/lib/api/definitions";
 import {useRouter} from "next/navigation";
 import {categoriesService} from "@/lib/api/services/categories.service";
 import {useEffect, useState} from "react";
@@ -35,7 +35,7 @@ export default function ProductCard({product}: { product: Product }) {
                 try {
                     const categoryData = await categoriesService.getCategory(product.id_categorie);
                     setCategory(categoryData.name);
-                } catch (error) {
+                } catch (error: unknown) {
                     console.error("Failed to fetch category:", error);
                 }
             }
@@ -43,11 +43,12 @@ export default function ProductCard({product}: { product: Product }) {
 
         fetchCategory();
 
-    }, [_id]);
+    }, [product.id_categorie]);
 
     return (
         <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
             <div className="aspect-square bg-card overflow-hidden relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={product.images?.[0] || "/computer-monitor-display.jpg"}
                     alt={product.nom}

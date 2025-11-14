@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,8 +46,8 @@ export default function LoginPage() {
       
       // ✅ Redirection vers la page produits
       router.push('/products');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      setError((err as { message?: string })?.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +67,9 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex flex-col items-center mb-4">
-              <img src="/favicon.ico" alt="achetez.com" className="h-16 w-16 mb-4" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.ico" alt="achetez.com" className="h-16 w-16 mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                 achetez.com
               </h1>
@@ -233,7 +236,7 @@ export default function LoginPage() {
                       href="/register"
                       className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      Don't have an account? Sign up
+                      Don&apos;t have an account? Sign up
                     </a>
                   </div>
                 </form>
@@ -262,10 +265,10 @@ export default function LoginPage() {
                   How it works:
                 </p>
                 <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• Click "Continue with Google"</li>
+                  <li>• Click &quot;Continue with Google&quot;</li>
                   <li>• Sign in with your Google account</li>
                   <li>• Grant permission to access your profile</li>
-                  <li>• You'll be redirected back to the app</li>
+                  <li>• You&apos;ll be redirected back to the app</li>
                 </ul>
               </div>
             </div>
@@ -281,12 +284,12 @@ export default function LoginPage() {
 
         {/* Back to Home Link */}
         <div className="text-center mt-6">
-          <a
+          <Link
             href="/"
             className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:underline"
           >
             ← Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

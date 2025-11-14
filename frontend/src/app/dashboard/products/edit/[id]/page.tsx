@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload"
 import { productsService } from "@/lib/api/services/products.service"
 import { categoriesService } from "@/lib/api/services/categories.service"
-import { Category, Product } from "@/lib/api/definitions"
+import { Category } from "@/lib/api/definitions"
 import { toast } from "sonner"
 import { debugLog } from "@/lib/utils"
 
@@ -58,7 +58,7 @@ export default function EditProductPage() {
                     specifications: productData.specifications || [],
                 })
                 setLoadingProduct(false)
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error("Error fetching data:", error)
                 toast.error("Erreur lors du chargement des données")
                 router.push("/dashboard/products")
@@ -67,7 +67,7 @@ export default function EditProductPage() {
         fetchData()
     }, [productId, router])
 
-    const handleInputChange = (field: string, value: any) => {
+    const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
@@ -107,7 +107,7 @@ export default function EditProductPage() {
 
             setFormData(prev => ({ ...prev, description }))
             toast.success("Description générée avec succès !")
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error generating description:", error)
             toast.error("Erreur lors de la génération")
         } finally {
@@ -174,9 +174,10 @@ export default function EditProductPage() {
 
             toast.success("Produit mis à jour avec succès !")
             router.push("/dashboard/products")
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating product:", error)
-            toast.error(error.response?.data?.message || "Erreur lors de la mise à jour")
+            const message = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (error as { message?: string })?.message || "Erreur lors de la mise à jour"
+            toast.error(message)
         } finally {
             setSubmitting(false)
         }
