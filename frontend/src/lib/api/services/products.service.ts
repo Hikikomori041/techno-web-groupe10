@@ -6,17 +6,17 @@ import {Product, ProductFilters, CreateProductDto} from "@/lib/api/definitions";
 export const productsService = {
     // Fetch all products
     getAllProducts: async (): Promise<Product[]> => {
-        const res = await apiClient.get(ENDPOINTS.PRODUCTS.ALL);
+        const res = await apiClient.get<Product[]>(ENDPOINTS.PRODUCTS.ALL);
         return res.data;
     },
 
     getAllProductsDashboard: async (): Promise<Product[]> => {
-        const res = await apiClient.get(ENDPOINTS.PRODUCTS.DASHBOARD_ALL, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.get<Product[]>(ENDPOINTS.PRODUCTS.DASHBOARD_ALL, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },
 
     getProductById: async (id: string): Promise<Product> => {
-        const res = await apiClient.get(ENDPOINTS.PRODUCTS.ONE(id));
+        const res = await apiClient.get<Product>(ENDPOINTS.PRODUCTS.ONE(id));
         return res.data;
     },
 
@@ -58,17 +58,21 @@ export const productsService = {
             params.specifications = JSON.stringify(filters.specifications);
         }
 
-        const res = await apiClient.get(ENDPOINTS.PRODUCTS.ALL, {params})
+        const res = await apiClient.get<{
+            products: Product[];
+            total: number;
+            hasMore: boolean;
+        }>(ENDPOINTS.PRODUCTS.ALL, {params})
         return res.data;
     },
 
     createProduct: async (productData: CreateProductDto): Promise<Product> => {
-        const res = await apiClient.post(ENDPOINTS.PRODUCTS.CREATE, productData, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.post<Product>(ENDPOINTS.PRODUCTS.CREATE, productData, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },
 
     updateProduct: async (productId: string, productData: CreateProductDto): Promise<Product> => {
-        const res = await apiClient.put(ENDPOINTS.PRODUCTS.UPDATE(productId), productData, ENDPOINTS.CREDENTIALS.INCLUDE);
+        const res = await apiClient.put<Product>(ENDPOINTS.PRODUCTS.UPDATE(productId), productData, ENDPOINTS.CREDENTIALS.INCLUDE);
         return res.data;
     },
 
