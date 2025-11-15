@@ -30,38 +30,44 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger API Documentation
-  const config = new DocumentBuilder()
-    .setTitle('E-Commerce API - IT Materials')
-    .setDescription('Complete API with authentication, products, user management, shopping cart, order management, categories, and analytics')
-    .setVersion('1.0')
-    .addTag('auth', 'Authentication endpoints')
-    .addTag('users', 'User management endpoints (Admin only)')
-    .addTag('categories', 'Product categories management (Admin only for CUD operations)')
-    .addTag('products', 'Product management endpoints with filtering and pagination')
-    .addTag('product-stats', 'Product statistics endpoints')
-    .addTag('cart', 'Shopping cart endpoints (Authenticated users)')
-    .addTag('orders', 'Order management endpoints (Users and Admin)')
-    .addTag('stats', 'Dashboard statistics and analytics (Admin/Moderator)')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .build();
+  // Swagger API Documentation (only in development or if ENABLE_SWAGGER=true)
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+    try {
+      const config = new DocumentBuilder()
+        .setTitle('E-Commerce API - IT Materials')
+        .setDescription('Complete API with authentication, products, user management, shopping cart, order management, categories, and analytics')
+        .setVersion('1.0')
+        .addTag('auth', 'Authentication endpoints')
+        .addTag('users', 'User management endpoints (Admin only)')
+        .addTag('categories', 'Product categories management (Admin only for CUD operations)')
+        .addTag('products', 'Product management endpoints with filtering and pagination')
+        .addTag('product-stats', 'Product statistics endpoints')
+        .addTag('cart', 'Shopping cart endpoints (Authenticated users)')
+        .addTag('orders', 'Order management endpoints (Users and Admin)')
+        .addTag('stats', 'Dashboard statistics and analytics (Admin/Moderator)')
+        .addBearerAuth(
+          {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            name: 'JWT',
+            description: 'Enter JWT token',
+            in: 'header',
+          },
+          'JWT-auth',
+        )
+        .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+      const swaggerDocument = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api', app, swaggerDocument);
+      logger.log(`Swagger docs available at: http://localhost:${port}/api`);
+    } catch (error) {
+      logger.warn('Failed to setup Swagger documentation', error);
+    }
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);
-  logger.log(`Swagger docs available at: http://localhost:${port}/api`);
 }
 bootstrap();
