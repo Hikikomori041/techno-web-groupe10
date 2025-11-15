@@ -48,7 +48,9 @@ export class AuthController {
     res.cookie('access_token', access_token, {
       httpOnly: true,        // Empêche l'accès JavaScript (protection XSS)
       secure: process.env.NODE_ENV === 'production',  // Secure only in production
-      sameSite: 'lax',       // Changed to 'lax' for better OAuth compatibility
+      // In production we are on a different domain than the frontend,
+      // so we must use SameSite=None to allow cross-site cookies
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
       path: '/',             // Disponible sur tout le site
     });
@@ -71,7 +73,7 @@ export class AuthController {
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -95,7 +97,7 @@ export class AuthController {
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -125,7 +127,7 @@ export class AuthController {
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
     });
     return res.json({ message: 'Logged out successfully' });
