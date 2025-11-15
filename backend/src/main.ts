@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
@@ -8,13 +9,17 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+  
+  // Get ConfigService to access environment variables
+  const configService = app.get(ConfigService);
 
   // Enable cookie parser for secure authentication
   app.use(cookieParser());
 
   // Enable CORS for frontend
+  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: frontendUrl,
     credentials: true, // Important: permet l'envoi de cookies
   });
 
@@ -30,7 +35,8 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT ?? 3000;
+  // Get port from environment variables (.env file or system environment)
+  const port = parseInt(configService.get<string>('PORT') || '3000', 10);
 
   // Swagger API Documentation (only in development or if ENABLE_SWAGGER=true)
   if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
@@ -68,7 +74,13 @@ async function bootstrap() {
     }
   }
 
-  await app.listen(port);
-  logger.log(`Application is running on: http://localhost:${port}`);
+  try {
+    await app.listen(port, '0.0.0.0');
+    logger.log(`Application is running on: http://0.0.0.0:${port}`);
+    logger.log(`Port ${port} is now listening`);
+  } catch (error) {
+    logger.error(`Failed to start application on port ${port}:`, error);
+    process.exit(1);
+  }
 }
 bootstrap();
