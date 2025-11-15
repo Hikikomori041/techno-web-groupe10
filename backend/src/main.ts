@@ -30,6 +30,8 @@ async function bootstrap() {
     }),
   );
 
+  const port = process.env.PORT ?? 3000;
+
   // Swagger API Documentation (only in development or if ENABLE_SWAGGER=true)
   if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
     try {
@@ -66,7 +68,6 @@ async function bootstrap() {
     }
   }
 
-  const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);
 }
