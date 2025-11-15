@@ -17,9 +17,31 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Enable CORS for frontend
-  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+  // Allow multiple origins (local dev + deployed frontend + optional FRONTEND_URL env)
+  const allowedOrigins: string[] = [
+    'http://localhost:3001',
+    // Deployed frontend on Vercel
+    'https://achetez-fr-dc1v.vercel.app',
+  ];
+
+  const frontendUrlEnv = configService.get<string>('FRONTEND_URL');
+  if (frontendUrlEnv) {
+    allowedOrigins.push(frontendUrlEnv);
+  }
+
   app.enableCors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (no Origin header)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
+    },
     credentials: true, // Important: permet l'envoi de cookies
   });
 
