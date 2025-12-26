@@ -9,4 +9,6 @@ services:
         value: production
       - key: NODE_OPTIONS
         value: --max-old-space-size=2048
+      - key: MONGODB_URI
+        value: mongodb+srv://nabil:NabilNabil123456@cluster0.qq7poq6.mongodb.net/?appName=Cluster0
 
