@@ -27,7 +27,7 @@ export const authService = {
 
     // Google OAuth (returns redirect URL)
     getGoogleAuthUrl: (): string => {
-        return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${ENDPOINTS.AUTH.GOOGLE}`;
+        return `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}${ENDPOINTS.AUTH.GOOGLE}`;
     },
 
     // Logout

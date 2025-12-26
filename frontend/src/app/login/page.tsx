@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authService } from '@/lib/api/services/auth.service';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function LoginPage() {
   const handleGoogleLogin = () => {
     setIsLoading(true);
     // Redirect to backend Google OAuth endpoint
-    window.location.href = 'http://localhost:3000/auth/google';
+    window.location.href = authService.getGoogleAuthUrl();
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -26,7 +27,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         credentials: 'include', // ✅ Important: include cookies
         headers: {

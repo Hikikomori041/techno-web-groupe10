@@ -1,7 +1,7 @@
 import {AuthCheckResponse, User} from '@/lib/api/definitions'
 
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
 
 
 // Server-side function to get current user

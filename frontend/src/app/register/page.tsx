@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/lib/api/services/auth.service';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,7 +21,8 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/auth/register', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +201,7 @@ export default function RegisterPage() {
 
           <div>
             <a
-              href="http://localhost:3000/auth/google"
+              href={authService.getGoogleAuthUrl()}
               className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

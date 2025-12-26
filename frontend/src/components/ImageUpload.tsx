@@ -52,7 +52,7 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
             const uploadResults = await uploadService.uploadMultipleImages(validFiles)
             
             // Construct full URLs for the uploaded images
-            const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
             const newImageUrls = uploadResults.map(result => `${apiBaseUrl}${result.url}`)
             
             onChange([...images, ...newImageUrls])
