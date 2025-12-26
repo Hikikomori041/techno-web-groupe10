@@ -23,6 +23,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
+        // Support direct MONGODB_URI connection string (takes precedence)
+        const mongodbUri = configService.get<string>('MONGODB_URI');
+        if (mongodbUri) {
+          return {
+            uri: mongodbUri,
+          };
+        }
+        
+        // Fallback to old method for backward compatibility
         const user = configService.get<string>('DB_USER');
         const pass = configService.get<string>('DB_PASSWORD');
         const name = configService.get<string>('DB_NAME');
