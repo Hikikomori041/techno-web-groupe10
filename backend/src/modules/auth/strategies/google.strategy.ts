@@ -16,14 +16,35 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     @InjectModel(User.name) private userModel: Model<User>,
   ) {
     // Get callback URL from environment or use defaults
-    const callbackUrlEnv = configService.get<string>('GOOGLE_CALLBACK_URL');
+    const callbackUrlEnv = configService
+      .get<string>('GOOGLE_CALLBACK_URL')
+      ?.trim();
     const nodeEnv = configService.get<string>('NODE_ENV');
+    const renderUrl = configService.get<string>('RENDER_EXTERNAL_URL');
 
-    const callbackURL =
-      callbackUrlEnv ||
-      (nodeEnv === 'production'
-        ? 'https://achetez-fr.onrender.com/auth/google-redirect'
-        : 'http://localhost:3000/auth/google-redirect');
+    // Determine callback URL with explicit priority
+    let callbackURL: string;
+    if (callbackUrlEnv) {
+      // Highest priority: explicit GOOGLE_CALLBACK_URL env var
+      callbackURL = callbackUrlEnv;
+    } else if (nodeEnv === 'production' || renderUrl) {
+      // Production: use production URL
+      const baseUrl = renderUrl || 'https://achetez-fr.onrender.com';
+      callbackURL = `${baseUrl}/auth/google-redirect`.replace(
+        /([^:]\/)\/+/g,
+        '$1',
+      ); // Remove double slashes
+    } else {
+      // Development: use localhost
+      callbackURL = 'http://localhost:3000/auth/google-redirect';
+    }
+
+    // Log for debugging (before super call using console.log since logger needs super first)
+    console.log('=== Google OAuth Configuration ===');
+    console.log(`Callback URL: ${callbackURL}`);
+    console.log(`NODE_ENV: ${nodeEnv || 'not set'}`);
+    console.log(`GOOGLE_CALLBACK_URL env: ${callbackUrlEnv || 'not set'}`);
+    console.log(`RENDER_EXTERNAL_URL: ${renderUrl || 'not set'}`);
 
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID') || '',
@@ -32,7 +53,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       scope: ['email', 'profile'],
     } as any);
 
-    // Log for debugging (after super call)
+    // Log again after super call for logger
     this.logger.log(`Google OAuth Callback URL: ${callbackURL}`);
     this.logger.log(`NODE_ENV: ${nodeEnv || 'not set'}`);
     this.logger.log(
