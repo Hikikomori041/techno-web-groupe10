@@ -18,7 +18,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET') || '',
       callbackURL:
         configService.get<string>('GOOGLE_CALLBACK_URL') ||
-        'http://localhost:3000/auth/google-redirect',
+        (process.env.NODE_ENV === 'production'
+          ? 'https://achetez-fr.onrender.com/auth/google-redirect'
+          : 'http://localhost:3000/auth/google-redirect'),
       scope: ['email', 'profile'],
     } as any);
   }
