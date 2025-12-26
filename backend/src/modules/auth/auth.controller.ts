@@ -56,17 +56,38 @@ export class AuthController {
     });
 
     // Redirect to main page (home) after successful Google login
-    // Priority: FRONTEND_URL env var > production default > localhost
-    const frontendUrl =
-      process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'production' ||
-      process.env.RENDER
-        ? 'https://achetez-fr-dc1v.vercel.app'
-        : 'http://localhost:3001');
+    // Determine frontend URL with explicit checks
+    const requestHost = (req.headers?.host as string) || '';
+    const isRenderHost =
+      typeof requestHost === 'string' &&
+      (requestHost.includes('onrender.com') ||
+        requestHost.includes('render.com'));
+    const isProductionEnv =
+      process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+    const isProduction = isRenderHost || isProductionEnv;
+
+    let frontendUrl: string;
+    if (process.env.FRONTEND_URL) {
+      // Highest priority: explicit FRONTEND_URL env var
+      frontendUrl = process.env.FRONTEND_URL;
+    } else if (isProduction) {
+      // Production: use Vercel URL
+      frontendUrl = 'https://achetez-fr-dc1v.vercel.app';
+    } else {
+      // Development: use localhost
+      frontendUrl = 'http://localhost:3001';
+    }
+
     const redirectUrl = `${frontendUrl}/`; // Redirect to home page
 
     this.logger.log(
-      `Google login successful, redirecting to ${redirectUrl} (NODE_ENV: ${process.env.NODE_ENV}, FRONTEND_URL: ${process.env.FRONTEND_URL || 'not set'})`,
+      `Google login successful - Redirecting to: ${redirectUrl} | ` +
+        `Host: ${requestHost} | ` +
+        `isRenderHost: ${isRenderHost} | ` +
+        `NODE_ENV: ${process.env.NODE_ENV} | ` +
+        `RENDER: ${process.env.RENDER || 'not set'} | ` +
+        `FRONTEND_URL: ${process.env.FRONTEND_URL || 'not set'} | ` +
+        `isProduction: ${isProduction}`,
     );
     return res.redirect(redirectUrl);
   }
