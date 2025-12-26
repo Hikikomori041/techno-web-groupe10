@@ -56,14 +56,18 @@ export class AuthController {
     });
 
     // Redirect to main page (home) after successful Google login
+    // Priority: FRONTEND_URL env var > production default > localhost
     const frontendUrl =
       process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'production'
+      (process.env.NODE_ENV === 'production' ||
+      process.env.RENDER
         ? 'https://achetez-fr-dc1v.vercel.app'
         : 'http://localhost:3001');
     const redirectUrl = `${frontendUrl}/`; // Redirect to home page
 
-    this.logger.debug(`Google login successful, redirecting to ${redirectUrl}`);
+    this.logger.log(
+      `Google login successful, redirecting to ${redirectUrl} (NODE_ENV: ${process.env.NODE_ENV}, FRONTEND_URL: ${process.env.FRONTEND_URL || 'not set'})`,
+    );
     return res.redirect(redirectUrl);
   }
 
