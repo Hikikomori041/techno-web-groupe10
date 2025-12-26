@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -30,7 +31,10 @@ import {
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // Google OAuth Routes
   @Get('google')
@@ -56,20 +60,23 @@ export class AuthController {
     });
 
     // Redirect to main page (home) after successful Google login
-    // Determine frontend URL with explicit checks
+    // Use ConfigService to get environment variables (more reliable in NestJS)
+    const frontendUrlEnv = this.configService.get<string>('FRONTEND_URL');
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    const renderEnv = this.configService.get<string>('RENDER');
     const requestHost = (req.headers?.host as string) || '';
     const isRenderHost =
       typeof requestHost === 'string' &&
       (requestHost.includes('onrender.com') ||
         requestHost.includes('render.com'));
-    const isProductionEnv =
-      process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+    const isProductionEnv = nodeEnv === 'production' || !!renderEnv;
     const isProduction = isRenderHost || isProductionEnv;
 
+    // Determine frontend URL with explicit priority
     let frontendUrl: string;
-    if (process.env.FRONTEND_URL) {
-      // Highest priority: explicit FRONTEND_URL env var
-      frontendUrl = process.env.FRONTEND_URL;
+    if (frontendUrlEnv) {
+      // Highest priority: explicit FRONTEND_URL env var from ConfigService
+      frontendUrl = frontendUrlEnv;
     } else if (isProduction) {
       // Production: use Vercel URL
       frontendUrl = 'https://achetez-fr-dc1v.vercel.app';
@@ -84,10 +91,11 @@ export class AuthController {
       `Google login successful - Redirecting to: ${redirectUrl} | ` +
         `Host: ${requestHost} | ` +
         `isRenderHost: ${isRenderHost} | ` +
-        `NODE_ENV: ${process.env.NODE_ENV} | ` +
-        `RENDER: ${process.env.RENDER || 'not set'} | ` +
-        `FRONTEND_URL: ${process.env.FRONTEND_URL || 'not set'} | ` +
-        `isProduction: ${isProduction}`,
+        `NODE_ENV: ${nodeEnv || 'not set'} | ` +
+        `RENDER: ${renderEnv || 'not set'} | ` +
+        `FRONTEND_URL (from ConfigService): ${frontendUrlEnv || 'not set'} | ` +
+        `isProduction: ${isProduction} | ` +
+        `Final frontendUrl: ${frontendUrl}`,
     );
     return res.redirect(redirectUrl);
   }
