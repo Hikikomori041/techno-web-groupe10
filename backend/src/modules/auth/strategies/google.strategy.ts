@@ -1,6 +1,6 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -9,20 +9,35 @@ import { Role } from '../../../common/enums/role.enum';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  private readonly logger = new Logger(GoogleStrategy.name);
+
   constructor(
     private configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<User>,
   ) {
+    // Get callback URL from environment or use defaults
+    const callbackUrlEnv = configService.get<string>('GOOGLE_CALLBACK_URL');
+    const nodeEnv = configService.get<string>('NODE_ENV');
+
+    const callbackURL =
+      callbackUrlEnv ||
+      (nodeEnv === 'production'
+        ? 'https://achetez-fr.onrender.com/auth/google-redirect'
+        : 'http://localhost:3000/auth/google-redirect');
+
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID') || '',
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET') || '',
-      callbackURL:
-        configService.get<string>('GOOGLE_CALLBACK_URL') ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://achetez-fr.onrender.com/auth/google-redirect'
-          : 'http://localhost:3000/auth/google-redirect'),
+      callbackURL,
       scope: ['email', 'profile'],
     } as any);
+
+    // Log for debugging (after super call)
+    this.logger.log(`Google OAuth Callback URL: ${callbackURL}`);
+    this.logger.log(`NODE_ENV: ${nodeEnv || 'not set'}`);
+    this.logger.log(
+      `GOOGLE_CALLBACK_URL from env: ${callbackUrlEnv || 'not set'}`,
+    );
   }
   
   async validate(
